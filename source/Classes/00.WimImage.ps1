@@ -6,6 +6,8 @@ class WimImage {
     [Version] $Version
     [UInt64] $Size
     [string] $Architecture
+    [string] $CurrentMountPath
+    [bool] $IsMounted
 
     WimImage([string] $ImagePath, [int] $ImageIndex = 1) {
         if ([string]::IsNullOrWhiteSpace($ImagePath)) {
@@ -33,12 +35,40 @@ class WimImage {
         }
     }
 
-    [void] Mount([string] $MountPath) {
-        throw [System.NotImplementedException]::new('WIM mounting will be implemented during Phase 2.')
+    [pscustomobject] Mount([string] $MountPath, [bool] $ReadOnly = $false) {
+        if ([string]::IsNullOrWhiteSpace($MountPath)) {
+            throw [System.ArgumentException]::new('Mount path must be provided.', 'MountPath')
+        }
+
+        $mountParams = @{
+            InputObject = $this
+            MountPath   = $MountPath
+            Index       = $this.Index
+        }
+        if ($ReadOnly) {
+            $mountParams['ReadOnly'] = $true
+        }
+
+        $result = Mount-WimImage @mountParams
+        $this.CurrentMountPath = $result.MountPath
+        $this.IsMounted = $true
+        return $result
     }
 
-    [void] Dismount([switch] $SaveChanges) {
-        throw [System.NotImplementedException]::new('WIM dismount will be implemented during Phase 2.')
+    [void] Dismount([bool] $DiscardChanges = $false, [bool] $KeepMountDirectory = $false) {
+        if (-not $this.IsMounted -or [string]::IsNullOrWhiteSpace($this.CurrentMountPath)) {
+            Write-ProvisioningLog -Message "WimImage instance for $($this.Path) is not tracked as mounted." -Type Warning -Source 'WimImage'
+            return
+        }
+
+        if ($DiscardChanges) {
+            Dismount-WimImage -MountPath $this.CurrentMountPath -Discard -SkipCleanup:$KeepMountDirectory
+        } else {
+            Dismount-WimImage -MountPath $this.CurrentMountPath -Save -SkipCleanup:$KeepMountDirectory
+        }
+
+        $this.IsMounted = $false
+        $this.CurrentMountPath = $null
     }
 
     [pscustomobject] GetInfo() {
@@ -54,7 +84,31 @@ class WimImage {
         }
     }
 
-    [System.Collections.Generic.IEnumerable[string]] GetInstalledUpdates() {
-        throw [System.NotImplementedException]::new('Retrieving installed updates will be implemented during Phase 2.')
+    [System.Collections.Generic.IEnumerable[pscustomobject]] GetInstalledUpdates([string] $MountPath) {
+        $targetMountPath = if (-not [string]::IsNullOrWhiteSpace($MountPath)) {
+            $MountPath
+        } elseif ($this.IsMounted -and -not [string]::IsNullOrWhiteSpace($this.CurrentMountPath)) {
+            $this.CurrentMountPath
+        } else {
+            throw [System.InvalidOperationException]::new('Mount path must be specified or the image must already be mounted.')
+        }
+
+        $resolvedMountPath = (Resolve-Path -LiteralPath $targetMountPath -ErrorAction Stop).ProviderPath
+
+        try {
+            $packages = Get-WindowsPackage -Path $resolvedMountPath -ErrorAction Stop
+            return $packages | ForEach-Object {
+                $kbMatch = [regex]::Match($_.PackageName, 'KB(\d{4,7})', 'IgnoreCase')
+                [pscustomobject]@{
+                    PackageName = $_.PackageName
+                    KB          = if ($kbMatch.Success) { "KB$($kbMatch.Groups[1].Value)" } else { $null }
+                    State       = $_.State
+                    ReleaseType = $_.ReleaseType
+                }
+            }
+        } catch {
+            Write-ProvisioningLog -Message "Failed to enumerate installed updates for mount path $resolvedMountPath. $($_.Exception.Message)" -Type Error -Source 'WimImage'
+            throw
+        }
     }
 }
