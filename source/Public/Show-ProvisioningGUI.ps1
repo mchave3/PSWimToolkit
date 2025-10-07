@@ -7,7 +7,7 @@ function Show-ProvisioningGUI {
         throw 'PSWimToolkit module must be imported before launching the GUI.'
     }
 
-    $guiPath = Join-Path -Path $PSScriptRoot -ChildPath '..\GUI\MainWindow.ps1'
+    $guiPath = Join-Path -Path $module.ModuleBase -ChildPath 'GUI/MainWindow.ps1'
     $resolvedGuiPath = Resolve-Path -LiteralPath $guiPath -ErrorAction Stop
 
     . $resolvedGuiPath
