@@ -168,21 +168,21 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
 
 ### Phase 0: Project Setup
 - [x] Module template structure created
-- [ ] Update module manifest (PSWimToolkit.psd1)
-  - [ ] Set PowerShell version to 7.4
-  - [ ] Define exported functions
-  - [ ] Add required modules if any
-  - [ ] Update description and tags
-- [ ] Copy HtmlAgilityPack DLLs from MSCatalogLTS
-  - [ ] netstandard2.0 version for PS7
-- [ ] Configure module loader (PSWimToolkit.psm1)
-  - [ ] Load HtmlAgilityPack assembly
-  - [ ] Initialize logging configuration
-  - [ ] Dot-source Classes (ordered)
-  - [ ] Dot-source Private functions
-  - [ ] Dot-source Public functions
-  - [ ] Export public functions
-- [ ] Configure build script
+- [x] Update module manifest (PSWimToolkit.psd1)
+  - [x] Set PowerShell version to 7.4
+  - [x] Define exported functions
+  - [x] Add required modules if any
+  - [x] Update description and tags
+- [x] Copy HtmlAgilityPack DLLs from MSCatalogLTS
+  - [x] netstandard2.0 version for PS7
+- [x] Configure module loader (PSWimToolkit.psm1)
+  - [x] Load HtmlAgilityPack assembly
+  - [x] Initialize logging configuration
+  - [x] Dot-source Classes (ordered)
+  - [x] Dot-source Private functions
+  - [x] Dot-source Public functions
+  - [x] Export public functions
+- [x] Configure build script
 
 ---
 

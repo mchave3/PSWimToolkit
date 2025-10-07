@@ -15,7 +15,7 @@ RootModule = 'PSWimToolkit.psm1'
 ModuleVersion = '0.0.1'
 
 # Supported PSEditions
-# CompatiblePSEditions = @()
+CompatiblePSEditions = @('Core')
 
 # ID used to uniquely identify this module
 GUID = '89292817-85d8-4347-b5ee-478734baeca8'
@@ -30,10 +30,10 @@ CompanyName = 'Mickael CHAVE'
 Copyright = '(c) Mickael CHAVE. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'A PowerShell toolkit for mounting, updating, and servicing Windows image (WIM/ISO) files.'
+Description = 'Modern PowerShell toolkit for provisioning Windows images (WIM) with Microsoft Update Catalog integration and automation helpers.'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '5.0'
+PowerShellVersion = '7.4'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
@@ -69,7 +69,16 @@ RequiredModules = @()
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @()
+FunctionsToExport = @(
+    'Find-WindowsUpdate'
+    'Save-WindowsUpdate'
+    'Get-WimImageInfo'
+    'Add-UpdateToWim'
+    'Update-WimImage'
+    'Enable-WimFeature'
+    'Start-ParallelProvisioning'
+    'Show-ProvisioningGUI'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -95,22 +104,29 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        # Tags = @()
+        Tags = @(
+            'Windows'
+            'WIM'
+            'Provisioning'
+            'Updates'
+            'PowerShell'
+            'DISM'
+        )
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://github.com/Mickael-CHAVE/PSWimToolkit/blob/main/LICENSE'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/Mickael-CHAVE/PSWimToolkit'
 
         # A URL to an icon representing this module.
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = ''
+        ReleaseNotes = 'Initial scaffolding for PSWimToolkit module setup.'
 
         # Prerelease string of this module
-        Prerelease =  ''
+        Prerelease = ''
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false
