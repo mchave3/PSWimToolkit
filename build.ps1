@@ -1,3 +1,6 @@
+#requires -PSEdition Core
+#requires -Version 7.4
+
 <#
     .DESCRIPTION
         Bootstrap and build script for PowerShell module CI/CD pipeline.
