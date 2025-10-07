@@ -39,8 +39,13 @@ try {
         . $file.FullName
     }
 
+    $publicFunctionNames = @()
     if ($publicFunctions) {
-        Export-ModuleMember -Function $publicFunctions.BaseName
+        $publicFunctionNames = $publicFunctions | ForEach-Object { $_.BaseName }
+    }
+
+    if ($publicFunctionNames.Count -gt 0) {
+        Export-ModuleMember -Function $publicFunctionNames
     } else {
         Export-ModuleMember -Function @()
     }
