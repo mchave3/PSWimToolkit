@@ -54,7 +54,7 @@ PowerShellVersion = '7.4'
 RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+RequiredAssemblies = @('Types\netstandard2.0\HtmlAgilityPack.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
