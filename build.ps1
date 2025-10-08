@@ -43,14 +43,6 @@
         Filter which tags to exclude when invoking Pester tests. This is used in
         the Invoke-Pester.pester.build.ps1 tasks.
 
-    .PARAMETER DscTestTag
-        Filter which tags to run when invoking DSC Resource tests. This is used
-        in the DscResource.Test.build.ps1 tasks.
-
-    .PARAMETER DscTestExcludeTag
-        Filter which tags to exclude when invoking DSC Resource tests. This is
-        used in the DscResource.Test.build.ps1 tasks.
-
     .PARAMETER ResolveDependency
         Not yet written.
 
@@ -116,14 +108,6 @@ param
     [Parameter()]
     [System.String[]]
     $PesterExcludeTag,
-
-    [Parameter()]
-    [System.String[]]
-    $DscTestTag,
-
-    [Parameter()]
-    [System.String[]]
-    $DscTestExcludeTag,
 
     [Parameter()]
     [Alias('bootstrap')]

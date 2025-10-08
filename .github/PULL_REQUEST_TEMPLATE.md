@@ -5,7 +5,6 @@
     Your contribution to this project is greatly appreciated!
 
     TITLE: Please be descriptive not sensationalist.
-    Prepend the title with the [DscResourceName] if your PR is specific to a DSC resource.
     Also prepend with [BREAKING CHANGE] if relevant.
     i.e. [BREAKING CHANGE][xFile] Add security descriptor property
 
@@ -58,6 +57,3 @@
 - [ ] Comment-based help added/updated.
 - [ ] Localization strings added/updated in all localization files as appropriate.
 - [ ] Examples appropriately added/updated.
-- [ ] Unit tests added/updated. See [DSC Resource Testing Guidelines](https://github.com/PowerShell/DscResources/blob/master/TestsGuidelines.md).
-- [ ] Integration tests added/updated (where possible). See [DSC Resource Testing Guidelines](https://github.com/PowerShell/DscResources/blob/master/TestsGuidelines.md).
-- [ ] New/changed code adheres to [DSC Resource Style Guidelines](https://github.com/PowerShell/DscResources/blob/master/StyleGuidelines.md) and [Best Practices](https://github.com/PowerShell/DscResources/blob/master/BestPractices.md).

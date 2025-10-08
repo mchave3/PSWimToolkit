@@ -1,7 +1,7 @@
 # Contributing
 
-Please check out common DSC Community [contributing guidelines](https://dsccommunity.org/guidelines/contributing).
+Please review the guidelines below before submitting changes.
 
 ## Running the Tests
 
-If want to know how to run this module's tests you can look at the [Testing Guidelines](https://dsccommunity.org/guidelines/testing-guidelines/#running-tests)
+Run `./build.ps1 -Tasks test` to execute the automated test suite before opening a pull request.
