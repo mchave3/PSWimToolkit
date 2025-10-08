@@ -58,7 +58,7 @@ source/
 │   ├── Update-WimImage.ps1       # Full provisioning workflow
 │   ├── Enable-WimFeature.ps1     # Enable Windows features
 │   ├── Start-ParallelProvisioning.ps1  # Parallel WIM processing
-│   └── Show-ProvisioningGUI.ps1  # Launch WPF interface
+│   └── Start-PSWimToolkit.ps1  # Launch WPF interface
 ├── GUI/                  # WPF interface
 │   ├── MainWindow.xaml           # UI layout
 │   ├── MainWindow.ps1            # Event handlers and logic

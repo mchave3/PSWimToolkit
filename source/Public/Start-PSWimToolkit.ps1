@@ -1,4 +1,4 @@
-function Show-ProvisioningGUI {
+function Start-PSWimToolkit {
     [CmdletBinding()]
     param ()
 

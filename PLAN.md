@@ -53,7 +53,7 @@ PSWimToolkit/
 │   │   ├── Update-WimImage.ps1           # Full provisioning
 │   │   ├── Enable-WimFeature.ps1         # Enable .NET 3.5, etc.
 │   │   ├── Start-ParallelProvisioning.ps1 # Parallel WIM processing
-│   │   └── Show-ProvisioningGUI.ps1      # Launch WPF interface
+│   │   └── Start-PSWimToolkit.ps1      # Launch WPF interface
 │   ├── GUI/
 │   │   ├── MainWindow.xaml               # Main GUI layout
 │   │   ├── MainWindow.ps1                # GUI logic/code-behind
@@ -489,7 +489,7 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
     - [x] Auto-scroll implementation
 
 #### Public Function
-- [x] **Show-ProvisioningGUI.ps1**
+- [x] **Start-PSWimToolkit.ps1**
   - [x] Entry point to launch GUI
   - [x] Load XAML files
   - [x] Initialize window

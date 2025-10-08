@@ -10,7 +10,7 @@ function Show-PSWimToolkitMainWindow {
     }
 
     if ([System.Threading.Thread]::CurrentThread.ApartmentState -ne [System.Threading.ApartmentState]::STA) {
-        throw 'Show-ProvisioningGUI must be invoked from an STA thread. Launch PowerShell with -STA and retry.'
+        throw 'Start-PSWimToolkit must be invoked from an STA thread. Launch PowerShell with -STA and retry.'
     }
 
     Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
