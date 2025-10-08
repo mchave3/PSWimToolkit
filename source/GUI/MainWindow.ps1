@@ -883,7 +883,7 @@ function Show-PSWimToolkitMainWindow {
     })
 
     $controls.DocumentationMenuItem.Add_Click({
-        Start-Process 'https://github.com/Mickael-CHAVE/PSWimToolkit' | Out-Null
+        Start-Process 'https://github.com/mchave3/PSWimToolkit' | Out-Null
     })
 
     $window.Add_Closing({
