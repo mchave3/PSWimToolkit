@@ -42,7 +42,7 @@ PSWimToolkit/
 │   │   ├── Dismount-WimImage.ps1         # Unmount wrapper
 │   │   ├── Test-WimImageVersion.ps1      # OS version detection
 │   │   ├── Test-UpdateInstalled.ps1      # Check if update exists
-│   │   ├── Write-ProvisioningLog.ps1     # Logging utility (enhanced)
+│   │   ├── Write-ToolkitLog.ps1     # Logging utility (enhanced)
 │   │   ├── Initialize-LogFile.ps1        # Log file initialization
 │   │   └── Get-LogFilePath.ps1           # Log path management
 │   ├── Public/
@@ -104,7 +104,7 @@ The module requires comprehensive logging capabilities for both troubleshooting 
 
 ### Implementation Details
 
-#### Write-ProvisioningLog.ps1 (Private Function)
+#### Write-ToolkitLog.ps1 (Private Function)
 Centralized logging function for all module operations.
 
 **Parameters**:
@@ -237,7 +237,7 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
   - [x] Return array of links with KB numbers
 
 #### Private Functions (Logging)
-- [x] **Write-ProvisioningLog.ps1**
+- [x] **Write-ToolkitLog.ps1**
   - [x] Core logging function
   - [x] Parameters: Message, Type, Source, NoConsole, NoFile
   - [x] Color-coded console output
@@ -671,10 +671,10 @@ $WimFiles | ForEach-Object -Parallel {
 
 **Thread Safety Implementation**:
 ```powershell
-# Write-ProvisioningLog.ps1
+# Write-ToolkitLog.ps1
 $script:LogMutex = New-Object System.Threading.Mutex($false, "PSWimToolkit_LogMutex")
 
-function Write-ProvisioningLog {
+function Write-ToolkitLog {
     param($Message, $Type)
 
     # Console output (always safe)
@@ -699,13 +699,13 @@ function Write-ProvisioningLog {
 This update must be installed first, before other updates:
 ```powershell
 if ($OSVersion -ge "10.0.26100.0") {
-    Write-ProvisioningLog -Message "Detected Windows 11 24H2, checking for KB5043080" -Type Info
+    Write-ToolkitLog -Message "Detected Windows 11 24H2, checking for KB5043080" -Type Info
 
     $KB5043080 = $Updates | Where-Object { $_.Name -like "*KB5043080*" }
     if ($KB5043080 -and -not (Test-UpdateInstalled -MountPath $MountPath -KB "KB5043080")) {
-        Write-ProvisioningLog -Message "Installing KB5043080 first (required for 24H2)" -Type Stage
+        Write-ToolkitLog -Message "Installing KB5043080 first (required for 24H2)" -Type Stage
         Add-WindowsPackage -Path $MountPath -PackagePath $KB5043080.FullName
-        Write-ProvisioningLog -Message "KB5043080 installed successfully" -Type Success
+        Write-ToolkitLog -Message "KB5043080 installed successfully" -Type Success
     }
     $Updates = $Updates | Where-Object { $_ -ne $KB5043080 }
 }
@@ -720,13 +720,13 @@ Requires SxS source files from installation media:
 Must detect version and use appropriate source.
 
 ```powershell
-Write-ProvisioningLog -Message "Enabling .NET Framework 3.5" -Type Stage
+Write-ToolkitLog -Message "Enabling .NET Framework 3.5" -Type Stage
 $SxSPath = switch ($OSVersion) {
     { $_ -lt "10.0.22000.0" } { $SxSPaths.Win10_22H2 }
     { $_ -ge "10.0.26100.0" } { $SxSPaths.Win11_24H2 }
     default { $SxSPaths.Win11_23H2 }
 }
-Write-ProvisioningLog -Message "Using SxS source: $SxSPath" -Type Info
+Write-ToolkitLog -Message "Using SxS source: $SxSPath" -Type Info
 Enable-WindowsOptionalFeature -Path $MountPath -FeatureName NetFx3 -All -Source $SxSPath -LimitAccess
 ```
 

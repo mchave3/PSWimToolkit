@@ -10,7 +10,7 @@ function Set-SecurityProtocol {
 
     if ($ResetToDefault) {
         [System.Net.ServicePointManager]::SecurityProtocol = (Get-Variable -Name 'DefaultSecurityProtocol' -Scope Script -ErrorAction SilentlyContinue).Value
-        Write-ProvisioningLog -Message 'Security protocol reverted to default settings.' -Type Debug -Source 'Set-SecurityProtocol'
+        Write-ToolkitLog -Message 'Security protocol reverted to default settings.' -Type Debug -Source 'Set-SecurityProtocol'
         return
     }
 
@@ -25,5 +25,5 @@ function Set-SecurityProtocol {
     }
 
     [System.Net.ServicePointManager]::SecurityProtocol = $desiredProtocols
-    Write-ProvisioningLog -Message ('Security protocol set to {0}.' -f [System.Net.ServicePointManager]::SecurityProtocol) -Type Debug -Source 'Set-SecurityProtocol'
+    Write-ToolkitLog -Message ('Security protocol set to {0}.' -f [System.Net.ServicePointManager]::SecurityProtocol) -Type Debug -Source 'Set-SecurityProtocol'
 }

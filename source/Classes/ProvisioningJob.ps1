@@ -19,20 +19,20 @@ class ProvisioningJob {
     [void] Start() {
         $this.StartTime = Get-Date
         $this.Status = 'Running'
-        Write-ProvisioningLog -Message "Provisioning job starting for $($this.WimImage.Path)." -Type Stage -Source 'ProvisioningJob'
+        Write-ToolkitLog -Message "Provisioning job starting for $($this.WimImage.Path)." -Type Stage -Source 'ProvisioningJob'
     }
 
     [void] Complete([bool] $Successful) {
         $this.EndTime = Get-Date
         $this.Status = if ($Successful) { 'Completed' } else { 'Failed' }
         $type = if ($Successful) { 'Success' } else { 'Error' }
-        Write-ProvisioningLog -Message "Provisioning job $($this.Status) for $($this.WimImage.Path)." -Type $type -Source 'ProvisioningJob'
+        Write-ToolkitLog -Message "Provisioning job $($this.Status) for $($this.WimImage.Path)." -Type $type -Source 'ProvisioningJob'
     }
 
     [void] AddError([string] $Message) {
         if (-not [string]::IsNullOrWhiteSpace($Message)) {
             [void]$this.Errors.Add($Message)
-            Write-ProvisioningLog -Message $Message -Type Error -Source 'ProvisioningJob'
+            Write-ToolkitLog -Message $Message -Type Error -Source 'ProvisioningJob'
         }
     }
 

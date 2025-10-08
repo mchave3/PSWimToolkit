@@ -9,6 +9,6 @@ function Initialize-HtmlParser {
         }
 
         Add-Type -Path $assemblyPath
-        Write-ProvisioningLog -Message 'HtmlAgilityPack assembly loaded by Initialize-HtmlParser.' -Type Debug -Source 'Initialize-HtmlParser'
+        Write-ToolkitLog -Message 'HtmlAgilityPack assembly loaded by Initialize-HtmlParser.' -Type Debug -Source 'Initialize-HtmlParser'
     }
 }

@@ -30,7 +30,7 @@ class UpdatePackage {
 
     [bool] Verify([string] $ExpectedSha256) {
         if (-not (Test-Path -LiteralPath $this.FilePath -PathType Leaf)) {
-            Write-ProvisioningLog -Message "Update package $($this.FileName) is missing from disk." -Type Error -Source 'UpdatePackage'
+            Write-ToolkitLog -Message "Update package $($this.FileName) is missing from disk." -Type Error -Source 'UpdatePackage'
             $this.IsVerified = $false
             return $false
         }
@@ -46,7 +46,7 @@ class UpdatePackage {
         $this.IsVerified = $isMatch
 
         if (-not $isMatch) {
-            Write-ProvisioningLog -Message "Hash mismatch for package $($this.FileName)." -Type Warning -Source 'UpdatePackage'
+            Write-ToolkitLog -Message "Hash mismatch for package $($this.FileName)." -Type Warning -Source 'UpdatePackage'
         }
 
         return $isMatch

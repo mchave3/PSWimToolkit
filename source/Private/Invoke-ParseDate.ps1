@@ -26,6 +26,6 @@ function Invoke-ParseDate {
         return Get-Date -Year $year -Month $month -Day $day
     }
 
-    Write-ProvisioningLog -Message "Unable to parse catalog date string '$DateString'." -Type Warning -Source 'Invoke-ParseDate'
+    Write-ToolkitLog -Message "Unable to parse catalog date string '$DateString'." -Type Warning -Source 'Invoke-ParseDate'
     return Get-Date
 }

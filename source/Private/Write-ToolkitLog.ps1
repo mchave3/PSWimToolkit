@@ -1,4 +1,4 @@
-function Write-ProvisioningLog {
+function Write-ToolkitLog {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]

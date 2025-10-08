@@ -18,7 +18,7 @@ function Add-UpdateToWim {
             try {
                 Import-Module -Name Dism -ErrorAction Stop
             } catch {
-                Write-ProvisioningLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Add-UpdateToWim'
+                Write-ToolkitLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Add-UpdateToWim'
                 throw
             }
         }
@@ -28,7 +28,7 @@ function Add-UpdateToWim {
             throw [System.IO.DirectoryNotFoundException]::new("Mount path '$resolvedMountPath' not found.")
         }
 
-        Write-ProvisioningLog -Message "Applying updates to mounted image at $resolvedMountPath." -Type Stage -Source 'Add-UpdateToWim'
+        Write-ToolkitLog -Message "Applying updates to mounted image at $resolvedMountPath." -Type Stage -Source 'Add-UpdateToWim'
     }
 
     process {
@@ -37,7 +37,7 @@ function Add-UpdateToWim {
                 $resolvedUpdatePath = (Resolve-Path -LiteralPath $path -ErrorAction Stop).ProviderPath
                 $fileInfo = Get-Item -LiteralPath $resolvedUpdatePath -ErrorAction Stop
             } catch {
-                Write-ProvisioningLog -Message ("Update path '{0}' could not be resolved: {1}" -f $path, $_.Exception.Message) -Type Error -Source 'Add-UpdateToWim'
+                Write-ToolkitLog -Message ("Update path '{0}' could not be resolved: {1}" -f $path, $_.Exception.Message) -Type Error -Source 'Add-UpdateToWim'
                 continue
             }
 
@@ -47,7 +47,7 @@ function Add-UpdateToWim {
             if (-not $Force.IsPresent -and $kbValue) {
                 try {
                     if (Test-UpdateInstalled -MountPath $resolvedMountPath -KB $kbValue) {
-                        Write-ProvisioningLog -Message ("Skipping {0}; KB{1} already installed." -f $fileInfo.Name, $kbValue) -Type Info -Source 'Add-UpdateToWim'
+                        Write-ToolkitLog -Message ("Skipping {0}; KB{1} already installed." -f $fileInfo.Name, $kbValue) -Type Info -Source 'Add-UpdateToWim'
                         $package = [UpdatePackage]::new($fileInfo.FullName, [int]$kbValue)
                         $package.IsVerified = $true
                         Write-Output ([pscustomobject]@{
@@ -60,7 +60,7 @@ function Add-UpdateToWim {
                         continue
                     }
                 } catch {
-                    Write-ProvisioningLog -Message ("Failed to verify installation state for KB{0}: {1}" -f $kbValue, $_.Exception.Message) -Type Warning -Source 'Add-UpdateToWim'
+                    Write-ToolkitLog -Message ("Failed to verify installation state for KB{0}: {1}" -f $kbValue, $_.Exception.Message) -Type Warning -Source 'Add-UpdateToWim'
                 }
             }
 
@@ -68,17 +68,17 @@ function Add-UpdateToWim {
                 continue
             }
 
-            Write-ProvisioningLog -Message ("Installing update {0} to {1}." -f $fileInfo.Name, $resolvedMountPath) -Type Stage -Source 'Add-UpdateToWim'
+            Write-ToolkitLog -Message ("Installing update {0} to {1}." -f $fileInfo.Name, $resolvedMountPath) -Type Stage -Source 'Add-UpdateToWim'
 
             $status = 'Installed'
             $reason = $null
             try {
                 Add-WindowsPackage -Path $resolvedMountPath -PackagePath $fileInfo.FullName -PreventPending -ErrorAction Stop | Out-Null
-                Write-ProvisioningLog -Message ("Successfully installed {0}." -f $fileInfo.Name) -Type Success -Source 'Add-UpdateToWim'
+                Write-ToolkitLog -Message ("Successfully installed {0}." -f $fileInfo.Name) -Type Success -Source 'Add-UpdateToWim'
             } catch {
                 $status = 'Failed'
                 $reason = $_.Exception.Message
-                Write-ProvisioningLog -Message ("Failed to install {0}: {1}" -f $fileInfo.Name, $reason) -Type Error -Source 'Add-UpdateToWim'
+                Write-ToolkitLog -Message ("Failed to install {0}: {1}" -f $fileInfo.Name, $reason) -Type Error -Source 'Add-UpdateToWim'
             }
 
             $kbInt = if ($kbValue) { [int]$kbValue } else { 0 }

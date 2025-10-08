@@ -37,7 +37,7 @@ function Invoke-CatalogRequest {
 
     try {
         Set-SecurityProtocol
-        Write-ProvisioningLog -Message "Submitting catalog request to $Uri ($Method)." -Type Debug -Source 'Invoke-CatalogRequest'
+        Write-ToolkitLog -Message "Submitting catalog request to $Uri ($Method)." -Type Debug -Source 'Invoke-CatalogRequest'
         $response = Invoke-WebRequest @invokeParams
 
         $htmlDoc = [HtmlAgilityPack.HtmlDocument]::new()
@@ -59,10 +59,10 @@ function Invoke-CatalogRequest {
             throw [System.Exception]::new("Microsoft Update Catalog error: $message")
         }
 
-        Write-ProvisioningLog -Message "No catalog results for request $Uri." -Type Info -Source 'Invoke-CatalogRequest'
+        Write-ToolkitLog -Message "No catalog results for request $Uri." -Type Info -Source 'Invoke-CatalogRequest'
         return $null
     } catch {
-        Write-ProvisioningLog -Message "Catalog request to $Uri failed. $($_.Exception.Message)" -Type Error -Source 'Invoke-CatalogRequest'
+        Write-ToolkitLog -Message "Catalog request to $Uri failed. $($_.Exception.Message)" -Type Error -Source 'Invoke-CatalogRequest'
         throw
     } finally {
         Set-SecurityProtocol -ResetToDefault

@@ -15,7 +15,7 @@ function Get-WimImageInfo {
             try {
                 Import-Module -Name Dism -ErrorAction Stop
             } catch {
-                Write-ProvisioningLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Get-WimImageInfo'
+                Write-ToolkitLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Get-WimImageInfo'
                 throw
             }
         }
@@ -26,23 +26,23 @@ function Get-WimImageInfo {
             try {
                 $resolvedPaths = Resolve-Path -Path $inputPath -ErrorAction Stop
             } catch {
-                Write-ProvisioningLog -Message "WIM path '$inputPath' could not be resolved. $($_.Exception.Message)" -Type Error -Source 'Get-WimImageInfo'
+                Write-ToolkitLog -Message "WIM path '$inputPath' could not be resolved. $($_.Exception.Message)" -Type Error -Source 'Get-WimImageInfo'
                 continue
             }
 
             foreach ($resolvedPath in $resolvedPaths) {
                 $fileInfo = Get-Item -LiteralPath $resolvedPath.ProviderPath -ErrorAction Stop
                 if ($fileInfo.PSIsContainer) {
-                    Write-ProvisioningLog -Message "Skipping directory '$($fileInfo.FullName)' when gathering WIM info." -Type Debug -Source 'Get-WimImageInfo'
+                    Write-ToolkitLog -Message "Skipping directory '$($fileInfo.FullName)' when gathering WIM info." -Type Debug -Source 'Get-WimImageInfo'
                     continue
                 }
 
-                Write-ProvisioningLog -Message ("Inspecting WIM image {0}" -f $fileInfo.FullName) -Type Stage -Source 'Get-WimImageInfo'
+                Write-ToolkitLog -Message ("Inspecting WIM image {0}" -f $fileInfo.FullName) -Type Stage -Source 'Get-WimImageInfo'
 
                 try {
                     $imageInfos = Get-WindowsImage -ImagePath $fileInfo.FullName -ErrorAction Stop
                 } catch {
-                    Write-ProvisioningLog -Message ("Failed to read image metadata for {0}: {1}" -f $fileInfo.FullName, $_.Exception.Message) -Type Error -Source 'Get-WimImageInfo'
+                    Write-ToolkitLog -Message ("Failed to read image metadata for {0}: {1}" -f $fileInfo.FullName, $_.Exception.Message) -Type Error -Source 'Get-WimImageInfo'
                     continue
                 }
 
@@ -60,7 +60,7 @@ function Get-WimImageInfo {
                     $wimImage.Size = [UInt64]$info.ImageSize
                     $wimImage.Architecture = $info.ImageArchitecture
 
-                    Write-ProvisioningLog -Message ("Found Index {0} ({1}) in {2}" -f $wimImage.Index, $wimImage.Name, $fileInfo.FullName) -Type Info -Source 'Get-WimImageInfo'
+                    Write-ToolkitLog -Message ("Found Index {0} ({1}) in {2}" -f $wimImage.Index, $wimImage.Name, $fileInfo.FullName) -Type Info -Source 'Get-WimImageInfo'
                     Write-Output $wimImage
                 }
             }

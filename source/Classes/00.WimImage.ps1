@@ -31,7 +31,7 @@ class WimImage {
             $this.Size = [UInt64]$imageInfo.ImageSize
             $this.Architecture = $imageInfo.ImageArchitecture
         } catch {
-            Write-ProvisioningLog -Message "Unable to read WIM metadata for $($this.Path): $($_.Exception.Message)" -Type Warning -Source 'WimImage'
+            Write-ToolkitLog -Message "Unable to read WIM metadata for $($this.Path): $($_.Exception.Message)" -Type Warning -Source 'WimImage'
         }
     }
 
@@ -57,7 +57,7 @@ class WimImage {
 
     [void] Dismount([bool] $DiscardChanges = $false, [bool] $KeepMountDirectory = $false) {
         if (-not $this.IsMounted -or [string]::IsNullOrWhiteSpace($this.CurrentMountPath)) {
-            Write-ProvisioningLog -Message "WimImage instance for $($this.Path) is not tracked as mounted." -Type Warning -Source 'WimImage'
+            Write-ToolkitLog -Message "WimImage instance for $($this.Path) is not tracked as mounted." -Type Warning -Source 'WimImage'
             return
         }
 
@@ -107,7 +107,7 @@ class WimImage {
                 }
             }
         } catch {
-            Write-ProvisioningLog -Message "Failed to enumerate installed updates for mount path $resolvedMountPath. $($_.Exception.Message)" -Type Error -Source 'WimImage'
+            Write-ToolkitLog -Message "Failed to enumerate installed updates for mount path $resolvedMountPath. $($_.Exception.Message)" -Type Error -Source 'WimImage'
             throw
         }
     }

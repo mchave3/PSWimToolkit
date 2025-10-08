@@ -80,7 +80,7 @@ function Start-ParallelProvisioning {
         try {
             $resolvedWim = (Resolve-Path -LiteralPath $wimPath -ErrorAction Stop).ProviderPath
         } catch {
-            Write-ProvisioningLog -Message ("Skipping WIM entry '{0}': {1}" -f $wimPath, $_.Exception.Message) -Type Error -Source 'Start-ParallelProvisioning'
+            Write-ToolkitLog -Message ("Skipping WIM entry '{0}': {1}" -f $wimPath, $_.Exception.Message) -Type Error -Source 'Start-ParallelProvisioning'
             continue
         }
 
@@ -108,7 +108,7 @@ function Start-ParallelProvisioning {
     }
 
     if (-not $wimEntries) {
-        Write-ProvisioningLog -Message 'No valid WIM inputs were provided for parallel provisioning.' -Type Warning -Source 'Start-ParallelProvisioning'
+        Write-ToolkitLog -Message 'No valid WIM inputs were provided for parallel provisioning.' -Type Warning -Source 'Start-ParallelProvisioning'
         return @()
     }
 
@@ -147,7 +147,7 @@ function Start-ParallelProvisioning {
                     Log   = $wimEntry.LogPath
                 }
             } catch {
-                Write-ProvisioningLog -Message ("Parallel provisioning failed for {0}: {1}" -f $wimEntry.WimPath, $_.Exception.Message) -Type Error -Source 'Start-ParallelProvisioning'
+                Write-ToolkitLog -Message ("Parallel provisioning failed for {0}: {1}" -f $wimEntry.WimPath, $_.Exception.Message) -Type Error -Source 'Start-ParallelProvisioning'
                 [pscustomobject]@{
                     Job   = $null
                     Error = $_.Exception.Message
@@ -159,7 +159,7 @@ function Start-ParallelProvisioning {
                     try {
                         Remove-Item -LiteralPath $mountPath -Recurse -Force -ErrorAction Stop
                     } catch {
-                        Write-ProvisioningLog -Message ("Failed to remove temporary mount directory '{0}': {1}" -f $mountPath, $_.Exception.Message) -Type Warning -Source 'Start-ParallelProvisioning'
+                        Write-ToolkitLog -Message ("Failed to remove temporary mount directory '{0}': {1}" -f $mountPath, $_.Exception.Message) -Type Warning -Source 'Start-ParallelProvisioning'
                     }
                 }
             }
@@ -189,12 +189,12 @@ function Start-ParallelProvisioning {
     }
 
     if ($errors.Count -gt 0) {
-        Write-ProvisioningLog -Message ("Parallel provisioning completed with {0} error(s)." -f $errors.Count) -Type Warning -Source 'Start-ParallelProvisioning'
+        Write-ToolkitLog -Message ("Parallel provisioning completed with {0} error(s)." -f $errors.Count) -Type Warning -Source 'Start-ParallelProvisioning'
         foreach ($entry in $errors) {
-            Write-ProvisioningLog -Message ("Failure processing {0}: {1}" -f $entry.Path, $entry.Error) -Type Error -Source 'Start-ParallelProvisioning'
+            Write-ToolkitLog -Message ("Failure processing {0}: {1}" -f $entry.Path, $entry.Error) -Type Error -Source 'Start-ParallelProvisioning'
         }
     } else {
-        Write-ProvisioningLog -Message ("Parallel provisioning completed successfully for {0} image(s)." -f $jobs.Count) -Type Success -Source 'Start-ParallelProvisioning'
+        Write-ToolkitLog -Message ("Parallel provisioning completed successfully for {0} image(s)." -f $jobs.Count) -Type Success -Source 'Start-ParallelProvisioning'
     }
 
     return $jobs

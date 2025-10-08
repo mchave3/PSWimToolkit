@@ -53,7 +53,7 @@ class CatalogUpdate {
                 }
             } catch {
                 $this.FileNames = @()
-                Write-ProvisioningLog -Message "CatalogUpdate failed to resolve filenames for GUID $($this.Guid): $($_.Exception.Message)" -Type Warning -Source 'CatalogUpdate'
+                Write-ToolkitLog -Message "CatalogUpdate failed to resolve filenames for GUID $($this.Guid): $($_.Exception.Message)" -Type Warning -Source 'CatalogUpdate'
             }
         }
     }

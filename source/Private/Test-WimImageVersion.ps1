@@ -11,7 +11,7 @@ function Test-WimImageVersion {
     $softwareHive = Join-Path -Path $resolvedMountPath -ChildPath 'Windows\System32\config\SOFTWARE'
 
     if (-not (Test-Path -LiteralPath $softwareHive -PathType Leaf)) {
-        Write-ProvisioningLog -Message "SOFTWARE hive not found under $resolvedMountPath." -Type Error -Source 'Test-WimImageVersion'
+        Write-ToolkitLog -Message "SOFTWARE hive not found under $resolvedMountPath." -Type Error -Source 'Test-WimImageVersion'
         throw [System.IO.FileNotFoundException]::new("Unable to locate SOFTWARE registry hive for mounted image.")
     }
 
@@ -20,7 +20,7 @@ function Test-WimImageVersion {
     $unloadArgs = @('UNLOAD', "HKLM\$registryKeyName")
 
     try {
-        Write-ProvisioningLog -Message "Loading offline registry hive for version detection." -Type Debug -Source 'Test-WimImageVersion'
+        Write-ToolkitLog -Message "Loading offline registry hive for version detection." -Type Debug -Source 'Test-WimImageVersion'
         $loadResult = & reg.exe @loadArgs
         if ($LASTEXITCODE -ne 0) {
             throw "reg.exe LOAD failed with exit code $LASTEXITCODE. $loadResult"
@@ -60,16 +60,16 @@ function Test-WimImageVersion {
             Channel        = $channel
         }
 
-        Write-ProvisioningLog -Message ("Detected {0} ({1}) version {2}" -f $result.ProductName, $result.Channel, $result.Version) -Type Info -Source 'Test-WimImageVersion'
+        Write-ToolkitLog -Message ("Detected {0} ({1}) version {2}" -f $result.ProductName, $result.Channel, $result.Version) -Type Info -Source 'Test-WimImageVersion'
         return $result
     } catch {
-        Write-ProvisioningLog -Message ("Failed to detect image version at {0}. {1}" -f $resolvedMountPath, $_.Exception.Message) -Type Error -Source 'Test-WimImageVersion'
+        Write-ToolkitLog -Message ("Failed to detect image version at {0}. {1}" -f $resolvedMountPath, $_.Exception.Message) -Type Error -Source 'Test-WimImageVersion'
         throw
     } finally {
         try {
             & reg.exe @unloadArgs | Out-Null
         } catch {
-            Write-ProvisioningLog -Message ("Failed to unload offline registry hive {0}: {1}" -f $registryKeyName, $_.Exception.Message) -Type Warning -Source 'Test-WimImageVersion'
+            Write-ToolkitLog -Message ("Failed to unload offline registry hive {0}: {1}" -f $registryKeyName, $_.Exception.Message) -Type Warning -Source 'Test-WimImageVersion'
         }
     }
 }

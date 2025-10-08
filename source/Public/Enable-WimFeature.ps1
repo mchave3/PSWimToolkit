@@ -21,7 +21,7 @@ function Enable-WimFeature {
         try {
             Import-Module -Name Dism -ErrorAction Stop
         } catch {
-            Write-ProvisioningLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Enable-WimFeature'
+            Write-ToolkitLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Enable-WimFeature'
             throw
         }
     }
@@ -36,7 +36,7 @@ function Enable-WimFeature {
         return
     }
 
-    Write-ProvisioningLog -Message ("Enabling feature(s) {0} for image {1}." -f $featuresList, $resolvedMountPath) -Type Stage -Source 'Enable-WimFeature'
+    Write-ToolkitLog -Message ("Enabling feature(s) {0} for image {1}." -f $featuresList, $resolvedMountPath) -Type Stage -Source 'Enable-WimFeature'
 
     $commandParams = @{
         Path        = $resolvedMountPath
@@ -59,10 +59,10 @@ function Enable-WimFeature {
 
     try {
         $result = Enable-WindowsOptionalFeature @commandParams
-        Write-ProvisioningLog -Message ("Feature enablement completed for {0}." -f $resolvedMountPath) -Type Success -Source 'Enable-WimFeature'
+        Write-ToolkitLog -Message ("Feature enablement completed for {0}." -f $resolvedMountPath) -Type Success -Source 'Enable-WimFeature'
         return $result
     } catch {
-        Write-ProvisioningLog -Message ("Failed to enable feature(s) {0}: {1}" -f $featuresList, $_.Exception.Message) -Type Error -Source 'Enable-WimFeature'
+        Write-ToolkitLog -Message ("Failed to enable feature(s) {0}: {1}" -f $featuresList, $_.Exception.Message) -Type Error -Source 'Enable-WimFeature'
         throw
     }
 }

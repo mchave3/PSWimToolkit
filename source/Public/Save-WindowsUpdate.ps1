@@ -20,9 +20,9 @@ function Save-WindowsUpdate {
         if (-not $resolvedDestination) {
             try {
                 $resolvedDestination = New-Item -Path $Destination -ItemType Directory -Force -ErrorAction Stop
-                Write-ProvisioningLog -Message "Created download directory at '$($resolvedDestination.FullName)'." -Type Info -Source 'Save-WindowsUpdate'
+                Write-ToolkitLog -Message "Created download directory at '$($resolvedDestination.FullName)'." -Type Info -Source 'Save-WindowsUpdate'
             } catch {
-                Write-ProvisioningLog -Message "Unable to create download directory '$Destination'. $($_.Exception.Message)" -Type Error -Source 'Save-WindowsUpdate'
+                Write-ToolkitLog -Message "Unable to create download directory '$Destination'. $($_.Exception.Message)" -Type Error -Source 'Save-WindowsUpdate'
                 throw
             }
         }
@@ -62,20 +62,20 @@ function Save-WindowsUpdate {
         }
 
         if (-not $targets) {
-            Write-ProvisioningLog -Message 'No updates to download.' -Type Warning -Source 'Save-WindowsUpdate'
+            Write-ToolkitLog -Message 'No updates to download.' -Type Warning -Source 'Save-WindowsUpdate'
             return
         }
 
         foreach ($update in $targets) {
             if (-not $update.Guid) {
-                Write-ProvisioningLog -Message "Skipping update without GUID: $($update.Title)" -Type Warning -Source 'Save-WindowsUpdate'
+                Write-ToolkitLog -Message "Skipping update without GUID: $($update.Title)" -Type Warning -Source 'Save-WindowsUpdate'
                 continue
             }
 
-            Write-ProvisioningLog -Message "Retrieving download links for $($update.Title) ($($update.Guid))." -Type Stage -Source 'Save-WindowsUpdate'
+            Write-ToolkitLog -Message "Retrieving download links for $($update.Title) ($($update.Guid))." -Type Stage -Source 'Save-WindowsUpdate'
             $links = Get-UpdateLinks -Guid $update.Guid
             if (-not $links) {
-                Write-ProvisioningLog -Message "No download links returned for $($update.Guid)." -Type Warning -Source 'Save-WindowsUpdate'
+                Write-ToolkitLog -Message "No download links returned for $($update.Guid)." -Type Warning -Source 'Save-WindowsUpdate'
                 continue
             }
 
@@ -91,20 +91,20 @@ function Save-WindowsUpdate {
                 $destinationFile = Join-Path -Path $script:DestinationPath -ChildPath $fileName
 
                 if ((Test-Path -LiteralPath $destinationFile) -and -not $Force) {
-                    Write-ProvisioningLog -Message "File '$fileName' already exists. Use -Force to re-download." -Type Info -Source 'Save-WindowsUpdate'
+                    Write-ToolkitLog -Message "File '$fileName' already exists. Use -Force to re-download." -Type Info -Source 'Save-WindowsUpdate'
                     [UpdatePackage]::new($destinationFile, $link.KB)
                     continue
                 }
 
                 Write-Progress -Activity "Downloading $fileName" -Status "File $index of $total" -PercentComplete (($index / [double]$total) * 100)
-                Write-ProvisioningLog -Message "Downloading $fileName from $uri." -Type Info -Source 'Save-WindowsUpdate'
+                Write-ToolkitLog -Message "Downloading $fileName from $uri." -Type Info -Source 'Save-WindowsUpdate'
 
                 try {
                     Set-SecurityProtocol
                     Invoke-WebRequest -Uri $uri -OutFile $destinationFile -UseBasicParsing -ErrorAction Stop
-                    Write-ProvisioningLog -Message "Download complete for $fileName." -Type Success -Source 'Save-WindowsUpdate'
+                    Write-ToolkitLog -Message "Download complete for $fileName." -Type Success -Source 'Save-WindowsUpdate'
                 } catch {
-                    Write-ProvisioningLog -Message "Download failed for $fileName. $($_.Exception.Message)" -Type Error -Source 'Save-WindowsUpdate'
+                    Write-ToolkitLog -Message "Download failed for $fileName. $($_.Exception.Message)" -Type Error -Source 'Save-WindowsUpdate'
                     if (Test-Path -LiteralPath $destinationFile) {
                         Remove-Item -LiteralPath $destinationFile -Force -ErrorAction SilentlyContinue
                     }
@@ -117,7 +117,7 @@ function Save-WindowsUpdate {
                 try {
                     [UpdatePackage]::new($destinationFile, $link.KB)
                 } catch {
-                    Write-ProvisioningLog -Message "Failed to create UpdatePackage for $fileName. $($_.Exception.Message)" -Type Warning -Source 'Save-WindowsUpdate'
+                    Write-ToolkitLog -Message "Failed to create UpdatePackage for $fileName. $($_.Exception.Message)" -Type Warning -Source 'Save-WindowsUpdate'
                 }
             }
         }

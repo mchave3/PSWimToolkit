@@ -81,7 +81,7 @@ Classes must be dot-sourced in dependency order in `PSWimToolkit.psm1`. Base cla
 - Internal wrappers use same names as DISM cmdlets with module prefix
 
 **Logging Architecture:**
-- All operations must log through `Write-ProvisioningLog`
+- All operations must log through `Write-ToolkitLog`
 - Thread-safe mutex-based file writing for parallel operations
 - Log levels: Debug, Info, Warning, Error, Success, Stage
 - Default location: `$env:TEMP\PSWimToolkit\Logs\`
@@ -97,7 +97,7 @@ The catalog search functionality is ported from the `Archives/MSCatalogLTS/` mod
 - `MSCatalogUpdate` class → `CatalogUpdate` class
 
 **Key Differences:**
-- Replace `Write-Host`/`Write-Warning` with `Write-ProvisioningLog`
+- Replace `Write-Host`/`Write-Warning` with `Write-ToolkitLog`
 - Return strongly-typed custom objects instead of PSCustomObjects where possible
 - Integrate with ProvisioningJob tracking
 
@@ -163,7 +163,7 @@ See `PLAN.md` for detailed phase breakdown:
 ### Error Handling Strategy
 1. Validate prerequisites before operations
 2. Use try/catch/finally blocks
-3. Log all errors with `Write-ProvisioningLog -Type Error`
+3. Log all errors with `Write-ToolkitLog -Type Error`
 4. Clean up resources in finally blocks (unmount WIMs, remove temp files)
 5. Continue processing other items on error (graceful degradation)
 

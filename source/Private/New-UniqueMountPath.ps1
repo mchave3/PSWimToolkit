@@ -12,10 +12,10 @@ function New-UniqueMountPath {
     try {
         if (-not (Test-Path -LiteralPath $BasePath -PathType Container)) {
             New-Item -Path $BasePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
-            Write-ProvisioningLog -Message ("Created mount base directory: {0}" -f $BasePath) -Type Debug -Source 'New-UniqueMountPath'
+            Write-ToolkitLog -Message ("Created mount base directory: {0}" -f $BasePath) -Type Debug -Source 'New-UniqueMountPath'
         }
     } catch {
-        Write-ProvisioningLog -Message ("Unable to ensure mount base directory '{0}': {1}" -f $BasePath, $_.Exception.Message) -Type Error -Source 'New-UniqueMountPath'
+        Write-ToolkitLog -Message ("Unable to ensure mount base directory '{0}': {1}" -f $BasePath, $_.Exception.Message) -Type Error -Source 'New-UniqueMountPath'
         throw
     }
 
@@ -31,7 +31,7 @@ function New-UniqueMountPath {
     try {
         New-Item -Path $mountPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
     } catch {
-        Write-ProvisioningLog -Message ("Failed to create mount directory '{0}': {1}" -f $mountPath, $_.Exception.Message) -Type Error -Source 'New-UniqueMountPath'
+        Write-ToolkitLog -Message ("Failed to create mount directory '{0}': {1}" -f $mountPath, $_.Exception.Message) -Type Error -Source 'New-UniqueMountPath'
         throw
     }
 
@@ -42,15 +42,15 @@ function New-UniqueMountPath {
             try {
                 if (-not (Test-Path -LiteralPath $_.FullName)) { return }
                 Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
-                Write-ProvisioningLog -Message ("Removed stale mount directory '{0}'." -f $_.FullName) -Type Debug -Source 'New-UniqueMountPath'
+                Write-ToolkitLog -Message ("Removed stale mount directory '{0}'." -f $_.FullName) -Type Debug -Source 'New-UniqueMountPath'
             } catch {
-                Write-ProvisioningLog -Message ("Failed to remove stale mount directory '{0}': {1}" -f $_.FullName, $_.Exception.Message) -Type Warning -Source 'New-UniqueMountPath'
+                Write-ToolkitLog -Message ("Failed to remove stale mount directory '{0}': {1}" -f $_.FullName, $_.Exception.Message) -Type Warning -Source 'New-UniqueMountPath'
             }
         }
     } catch {
-        Write-ProvisioningLog -Message ("Stale mount cleanup encountered an issue: {0}" -f $_.Exception.Message) -Type Warning -Source 'New-UniqueMountPath'
+        Write-ToolkitLog -Message ("Stale mount cleanup encountered an issue: {0}" -f $_.Exception.Message) -Type Warning -Source 'New-UniqueMountPath'
     }
 
-    Write-ProvisioningLog -Message ("Allocated mount directory '{0}'." -f $mountPath) -Type Debug -Source 'New-UniqueMountPath'
+    Write-ToolkitLog -Message ("Allocated mount directory '{0}'." -f $mountPath) -Type Debug -Source 'New-UniqueMountPath'
     return $mountPath
 }

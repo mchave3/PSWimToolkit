@@ -53,7 +53,7 @@ function Find-WindowsUpdate {
             throw [System.ArgumentException]::new('A search query must be specified.')
         }
 
-        Write-ProvisioningLog -Message "Catalog search starting for '$searchQuery'." -Type Stage -Source 'Find-WindowsUpdate'
+        Write-ToolkitLog -Message "Catalog search starting for '$searchQuery'." -Type Stage -Source 'Find-WindowsUpdate'
         $encodedQuery = [uri]::EscapeDataString($searchQuery)
         $baseUri = "https://www.catalog.update.microsoft.com/Search.aspx?q=$encodedQuery"
         $responses = @()
@@ -61,7 +61,7 @@ function Find-WindowsUpdate {
         try {
             $response = Invoke-CatalogRequest -Uri $baseUri
             if ($null -eq $response) {
-                Write-ProvisioningLog -Message "No updates returned for '$searchQuery'." -Type Info -Source 'Find-WindowsUpdate'
+                Write-ToolkitLog -Message "No updates returned for '$searchQuery'." -Type Info -Source 'Find-WindowsUpdate'
                 return
             }
 
@@ -81,13 +81,13 @@ function Find-WindowsUpdate {
                 }
             }
         } catch {
-            Write-ProvisioningLog -Message "Catalog search failed for '$searchQuery'. $($_.Exception.Message)" -Type Error -Source 'Find-WindowsUpdate'
+            Write-ToolkitLog -Message "Catalog search failed for '$searchQuery'. $($_.Exception.Message)" -Type Error -Source 'Find-WindowsUpdate'
             throw
         }
 
         $rows = $responses | ForEach-Object { $_.GetRows() }
         if (-not $rows) {
-            Write-ProvisioningLog -Message "No rows located for '$searchQuery'." -Type Info -Source 'Find-WindowsUpdate'
+            Write-ToolkitLog -Message "No rows located for '$searchQuery'." -Type Info -Source 'Find-WindowsUpdate'
             return
         }
 
@@ -95,7 +95,7 @@ function Find-WindowsUpdate {
             try {
                 [CatalogUpdate]::new($row, $IncludeFileNames.IsPresent)
             } catch {
-                Write-ProvisioningLog -Message "Failed to parse catalog row. $($_.Exception.Message)" -Type Warning -Source 'Find-WindowsUpdate'
+                Write-ToolkitLog -Message "Failed to parse catalog row. $($_.Exception.Message)" -Type Warning -Source 'Find-WindowsUpdate'
             }
         }
 
@@ -149,7 +149,7 @@ function Find-WindowsUpdate {
         }
 
         $updates = $updates | Sort-Object LastUpdated -Descending
-        Write-ProvisioningLog -Message ("Catalog search '{0}' returned {1} update(s)." -f $searchQuery, $updates.Count) -Type Success -Source 'Find-WindowsUpdate'
+        Write-ToolkitLog -Message ("Catalog search '{0}' returned {1} update(s)." -f $searchQuery, $updates.Count) -Type Success -Source 'Find-WindowsUpdate'
         $updates
     }
 }

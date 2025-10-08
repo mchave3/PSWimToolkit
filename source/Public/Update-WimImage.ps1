@@ -45,7 +45,7 @@ function Update-WimImage {
             }
 
             Copy-Item -LiteralPath $resolvedWimPath -Destination $OutputPath -Force -ErrorAction Stop
-            Write-ProvisioningLog -Message ("Copied source WIM to {0} for processing." -f $OutputPath) -Type Info -Source 'Update-WimImage'
+            Write-ToolkitLog -Message ("Copied source WIM to {0} for processing." -f $OutputPath) -Type Info -Source 'Update-WimImage'
             $resolvedWimPath = (Resolve-Path -LiteralPath $OutputPath -ErrorAction Stop).ProviderPath
         }
 
@@ -58,7 +58,7 @@ function Update-WimImage {
         }
 
         $logFile = Initialize-LogFile -ForceNew
-        Write-ProvisioningLog -Message "Provisioning log initialized at $logFile." -Type Debug -Source 'Update-WimImage'
+        Write-ToolkitLog -Message "Provisioning log initialized at $logFile." -Type Debug -Source 'Update-WimImage'
 
         $wimImage = [WimImage]::new($resolvedWimPath, $Index)
         $job = [ProvisioningJob]::new($wimImage, $logFile)
@@ -88,11 +88,11 @@ function Update-WimImage {
             $versionInfo = Test-WimImageVersion -MountPath $mountResult.MountPath
 
             $jobMessage = "Processing $($wimImage.Path) (Index $($wimImage.Index)) - $($versionInfo.ProductName)"
-            Write-ProvisioningLog -Message $jobMessage -Type Info -Source 'Update-WimImage'
+            Write-ToolkitLog -Message $jobMessage -Type Info -Source 'Update-WimImage'
 
             $updateFiles = Get-ChildItem -Path $updatesRoot -File -ErrorAction Stop | Where-Object { $_.Extension -in ('.msu', '.cab') } | Sort-Object Name
             if (-not $updateFiles) {
-                Write-ProvisioningLog -Message ("No update packages found in {0}." -f $updatesRoot) -Type Warning -Source 'Update-WimImage'
+                Write-ToolkitLog -Message ("No update packages found in {0}." -f $updatesRoot) -Type Warning -Source 'Update-WimImage'
             }
 
             if ($versionInfo.Channel -eq 'Windows 11 24H2') {
@@ -100,7 +100,7 @@ function Update-WimImage {
                 if ($prereq) {
                     $others = $updateFiles | Where-Object { $_.Name -notmatch 'KB5043080' }
                     $updateFiles = @($prereq + $others)
-                    Write-ProvisioningLog -Message "Prioritizing KB5043080 for Windows 11 24H2 image." -Type Info -Source 'Update-WimImage'
+                    Write-ToolkitLog -Message "Prioritizing KB5043080 for Windows 11 24H2 image." -Type Info -Source 'Update-WimImage'
                 }
             }
 
@@ -128,7 +128,7 @@ function Update-WimImage {
                                 $success = $false
                             }
                             default {
-                                Write-ProvisioningLog -Message ("Update {0} status: {1}" -f $updateId, $result.Status) -Type Debug -Source 'Update-WimImage'
+                                Write-ToolkitLog -Message ("Update {0} status: {1}" -f $updateId, $result.Status) -Type Debug -Source 'Update-WimImage'
                             }
                         }
                     }
@@ -142,7 +142,7 @@ function Update-WimImage {
 
             if ($EnableNetFx3) {
                 if (-not $SxSPath) {
-                    Write-ProvisioningLog -Message "NetFx3 enablement requested but no SxS source provided." -Type Warning -Source 'Update-WimImage'
+                    Write-ToolkitLog -Message "NetFx3 enablement requested but no SxS source provided." -Type Warning -Source 'Update-WimImage'
                 } else {
                     try {
                         Enable-WimFeature -MountPath $mountResult.MountPath -FeatureName 'NetFx3' -SxSPath $SxSPath -IncludeAll -LimitAccess
@@ -171,7 +171,7 @@ function Update-WimImage {
             }
         }
 
-        Write-ProvisioningLog -Message ("Update process completed. Updates applied: {0}" -f $updatesApplied) -Type Success -Source 'Update-WimImage'
+        Write-ToolkitLog -Message ("Update process completed. Updates applied: {0}" -f $updatesApplied) -Type Success -Source 'Update-WimImage'
         $job.Complete($success)
         return $job
     }

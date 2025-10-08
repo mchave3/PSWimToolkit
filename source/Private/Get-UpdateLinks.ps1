@@ -9,7 +9,7 @@ function Get-UpdateLinks {
         throw [System.ArgumentException]::new('Update GUID must be provided.', 'Guid')
     }
 
-    Write-ProvisioningLog -Message "Resolving download links for GUID $Guid." -Type Debug -Source 'Get-UpdateLinks'
+    Write-ToolkitLog -Message "Resolving download links for GUID $Guid." -Type Debug -Source 'Get-UpdateLinks'
 
     $post = @{ size = 0; UpdateID = $Guid; UpdateIDInfo = $Guid } | ConvertTo-Json -Compress
     $body = @{ UpdateIDs = "[$post]" }
@@ -37,7 +37,7 @@ function Get-UpdateLinks {
         }
 
         if ($matches.Count -eq 0) {
-            Write-ProvisioningLog -Message "No download links found for GUID $Guid." -Type Warning -Source 'Get-UpdateLinks'
+            Write-ToolkitLog -Message "No download links found for GUID $Guid." -Type Warning -Source 'Get-UpdateLinks'
             return @()
         }
 
@@ -50,7 +50,7 @@ function Get-UpdateLinks {
 
         return $links | Sort-Object KB -Descending
     } catch {
-        Write-ProvisioningLog -Message "Failed to retrieve download links for GUID $Guid. $_" -Type Error -Source 'Get-UpdateLinks'
+        Write-ToolkitLog -Message "Failed to retrieve download links for GUID $Guid. $_" -Type Error -Source 'Get-UpdateLinks'
         return @()
     } finally {
         Set-SecurityProtocol -ResetToDefault

@@ -25,7 +25,7 @@ function Mount-WimImage {
             try {
                 Import-Module -Name Dism -ErrorAction Stop
             } catch {
-                Write-ProvisioningLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Mount-WimImage'
+                Write-ToolkitLog -Message "Unable to import DISM module: $($_.Exception.Message)" -Type Error -Source 'Mount-WimImage'
                 throw
             }
         }
@@ -43,7 +43,7 @@ function Mount-WimImage {
                 $fullPath = (Resolve-Path -LiteralPath $ImagePath -ErrorAction Stop).ProviderPath
                 $resolvedImage = [WimImage]::new($fullPath, $Index)
             } catch {
-                Write-ProvisioningLog -Message "WIM path '$ImagePath' could not be resolved. $($_.Exception.Message)" -Type Error -Source 'Mount-WimImage'
+                Write-ToolkitLog -Message "WIM path '$ImagePath' could not be resolved. $($_.Exception.Message)" -Type Error -Source 'Mount-WimImage'
                 throw
             }
         }
@@ -56,11 +56,11 @@ function Mount-WimImage {
 
             $directoryContents = Get-ChildItem -LiteralPath $targetMountPath -Force -ErrorAction SilentlyContinue
             if ($directoryContents -and $directoryContents.Count -gt 0) {
-                Write-ProvisioningLog -Message "Mount path '$targetMountPath' must be empty before mounting." -Type Error -Source 'Mount-WimImage'
+                Write-ToolkitLog -Message "Mount path '$targetMountPath' must be empty before mounting." -Type Error -Source 'Mount-WimImage'
                 throw [System.InvalidOperationException]::new("Mount path '$targetMountPath' is not empty.")
             }
 
-            Write-ProvisioningLog -Message ("Mounting WIM {0} (Index {1}) to {2}." -f $resolvedImage.Path, $resolvedImage.Index, $targetMountPath) -Type Stage -Source 'Mount-WimImage'
+            Write-ToolkitLog -Message ("Mounting WIM {0} (Index {1}) to {2}." -f $resolvedImage.Path, $resolvedImage.Index, $targetMountPath) -Type Stage -Source 'Mount-WimImage'
 
             $mountParams = @{
                 ImagePath = $resolvedImage.Path
@@ -73,7 +73,7 @@ function Mount-WimImage {
             }
 
             $mountResult = Mount-WindowsImage @mountParams
-            Write-ProvisioningLog -Message ("Mount complete: {0}" -f $mountResult.ImagePath) -Type Success -Source 'Mount-WimImage'
+            Write-ToolkitLog -Message ("Mount complete: {0}" -f $mountResult.ImagePath) -Type Success -Source 'Mount-WimImage'
 
             return [pscustomobject]@{
                 WimPath    = $resolvedImage.Path
@@ -83,7 +83,7 @@ function Mount-WimImage {
                 Timestamp  = Get-Date
             }
         } catch {
-            Write-ProvisioningLog -Message ("Failed to mount WIM. {0}" -f $_.Exception.Message) -Type Error -Source 'Mount-WimImage'
+            Write-ToolkitLog -Message ("Failed to mount WIM. {0}" -f $_.Exception.Message) -Type Error -Source 'Mount-WimImage'
             throw
         }
     }
