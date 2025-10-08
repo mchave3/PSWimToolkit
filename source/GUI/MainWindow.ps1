@@ -85,6 +85,15 @@ function Show-PSWimToolkitMainWindow {
         }
     }
 
+    # Maximize the window at startup and force it to surface in the foreground
+    $window.WindowState = [System.Windows.WindowState]::Maximized
+    $window.Add_ContentRendered({
+        param($sender, $eventArgs)
+        $sender.Topmost = $true
+        $sender.Activate()
+        $sender.Topmost = $false
+    })
+
     $stopBrush = New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromRgb(0xD1, 0x34, 0x38))
     $controls.StopButton.Background = $stopBrush
     $controls.StopButton.BorderBrush = $stopBrush
