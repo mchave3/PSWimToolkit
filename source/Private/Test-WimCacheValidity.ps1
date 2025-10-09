@@ -64,7 +64,20 @@ function Test-WimCacheValidity {
         }
 
         # Validate last modified date (with 1 second tolerance for filesystem precision)
-        $cachedLastModified = [DateTime]::Parse($cache.LastModified)
+        if ($cache.LastModified -is [DateTime]) {
+            $cachedLastModified = if ($cache.LastModified.Kind -eq [System.DateTimeKind]::Unspecified) {
+                [DateTime]::SpecifyKind($cache.LastModified, [System.DateTimeKind]::Utc)
+            } else {
+                $cache.LastModified.ToUniversalTime()
+            }
+        } else {
+            $cachedLastModified = [DateTime]::ParseExact(
+                [string]$cache.LastModified,
+                'o',
+                [System.Globalization.CultureInfo]::InvariantCulture,
+                [System.Globalization.DateTimeStyles]::AdjustToUniversal
+            )
+        }
         $timeDiff = [Math]::Abs(($cachedLastModified - $wimFile.LastWriteTimeUtc).TotalSeconds)
         if ($timeDiff -gt 1) {
             Write-ToolkitLog -Message "Cache invalidated for '$WimPath': Last modified date changed" -Type Debug -Source 'Test-WimCacheValidity'
