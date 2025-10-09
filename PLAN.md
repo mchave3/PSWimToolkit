@@ -74,6 +74,16 @@ PSWimToolkit/
 
 ---
 
+## Workspace Defaults
+
+- Default data root: `%ProgramData%\PSWimToolkit` with subfolders for `Logs`, `Mounts`, `Imports`, `Updates`, `Cache`, `Temp`, and GUI-specific roots.
+- Updates workspace: `%ProgramData%\PSWimToolkit\Updates\<OperatingSystem>\<Release>\<UpdateType>` (for example `Windows 11\23H2\Cumulative Updates`). Paths are created during catalog downloads.
+- CLI helpers: `Get-ToolkitDataPath`, `Get-ToolkitUpdatesRoot`, and `Get-ToolkitUpdatePath` expose strongly-typed paths for scripts and cmdlets.
+- Provisioning and catalog download cmdlets resolve defaults through the workspace helpers when paths are not supplied explicitly.
+- Defaults are override-friendly via parameters (`-UpdatePath`, `-Destination`, `-UpdateType`) while continuing to honor the centralized root.
+
+---
+
 ## Logging Architecture
 
 ### Logging Requirements
@@ -515,7 +525,7 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
 #### Update Catalog UX & Automation
 - [x] Enhance the catalog search dialog with drop-down filters (OS family, release, architecture, update type) populated from toolkit catalog facets.
 - [x] Cascade filter selections to build the catalog query automatically while still permitting manual search overrides.
-- [ ] Persist last-used filter defaults per user profile to streamline repeat searches. *(Defer to Phase 6 polish.)*
+- [ ] Persist last-used filter defaults per user profile to streamline repeat searches. *(Defer to Phase 7 polish.)*
 - [x] Countersign validation so only supported combinations (OS, release, architecture) feed catalog queries while still allowing manual refinement.
 - [x] Add an `Auto Detect` button next to `Search Catalog` in the main window command bar.
 - [x] Implement an auto-detect workflow that inspects the currently selected WIMs, proposes applicable updates, and displays them in a dedicated dialog with multi-select + queue-to-download.
@@ -531,7 +541,30 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
 
 ---
 
-### Phase 6: Documentation & Polish
+### Phase 6: Workspace & Data Root Standardization
+**Goal**: Consolidate all toolkit working directories under `%ProgramData%\PSWimToolkit` with predictable structure, lifecycle policies, and override hooks.
+
+#### Common Data Root
+- [ ] Introduce a `Get-ToolkitDataRoot` helper that resolves `%ProgramData%\PSWimToolkit`, seeds the folder tree during module initialization, and reuses cached results.
+- [ ] Define canonical subfolders (`Logs`, `Mounts`, `Imports`, `Cache`, `GUI`, `Temp`) and expose them via module-level configuration.
+- [ ] Update default parameter values and fallbacks in CLI (`Update-WimImage`, `Start-ParallelProvisioning`, `Import-WimFromIso`, etc.) and GUI bootstrapping to consume the shared helper.
+- [ ] Allow environment variable or settings overrides (e.g., `$env:PSWimToolkitRoot`, module preference) for environments that require alternative storage.
+- [ ] Normalize the updates workspace as `%ProgramData%\PSWimToolkit\Updates\<OS>\<Release>\<UpdateType>` and publish helpers for discovery.
+
+#### Lifecycle & Cleanup
+- [ ] Expand stale-mount and stale-download cleanup routines with retention knobs (max age, max directory size).
+- [ ] Surface warnings when the ProgramData workspace is not writable or unexpectedly falls back to `%TEMP%`.
+- [ ] Deliver `Reset-PSWimToolkitWorkspace` automation to rebuild the folder tree safely without disrupting active mounts.
+- [ ] Update build/integration scripts to initialize or prune the workspace before test execution.
+
+#### Validation
+- [ ] Add unit/integration coverage around workspace provisioning, cleanup, and override scenarios.
+- [ ] Validate behavior on Windows 10/11 (Core and Server) under both admin and standard user shells.
+- [ ] Capture telemetry/log markers noting the active workspace to simplify field diagnostics.
+
+---
+
+### Phase 7: Documentation & Polish
 **Goal**: Professional documentation and final refinements
 
 #### User Documentation
@@ -812,8 +845,9 @@ Enable-WindowsOptionalFeature -Path $MountPath -FeatureName NetFx3 -All -Source 
 | Phase 3: Parallel | 3-4 days | Phase 2 |
 | Phase 4: GUI | 7-10 days | Phase 2, 3 |
 | Phase 5: WIM Mgmt + Catalog UX | 5-7 days | Phase 1-4 |
-| Phase 6: Docs | 3-5 days | Phase 1-5 |
-| **Total** | **28-41 days** | |
+| Phase 6: Workspace & Data Root | 3-4 days | Phase 1-5 |
+| Phase 7: Docs | 3-5 days | Phase 1-6 |
+| **Total** | **31-45 days** | |
 
 *Note: Timeline assumes dedicated development time. Adjust for part-time work. Logging adds 1-2 days.*
 
@@ -832,13 +866,14 @@ Enable-WindowsOptionalFeature -Path $MountPath -FeatureName NetFx3 -All -Source 
 - [ ] Core documentation
 
 ### Version 1.0 Complete
-- [ ] All phases 0-6 complete
+- [ ] All phases 0-7 complete
 - [ ] WPF GUI functional with log viewer
 - [x] WIM Management workspace supports Import WIM/ISO and detail workflow
 - [x] Catalog search dialog ships with facet filters and auto-detect pipeline
 - [ ] Full documentation
 - [ ] PSScriptAnalyzer clean
 - [ ] Thread-safe logging verified
+- [ ] Structured updates workspace leveraged by catalog downloads and provisioning workflows
 - [ ] Ready for production use
 
 ### Stretch Goals
@@ -872,4 +907,4 @@ Enable-WindowsOptionalFeature -Path $MountPath -FeatureName NetFx3 -All -Source 
 
 **Last Updated**: 2025-10-09
 **Status**: Phase 5 Completed
-**Next Milestone**: Kick off Phase 6 Documentation & Polish
+**Next Milestone**: Kick off Phase 6 Workspace & Data Root Standardization

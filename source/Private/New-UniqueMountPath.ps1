@@ -3,7 +3,7 @@ function New-UniqueMountPath {
     [OutputType([string])]
     param (
         [Parameter()]
-        [string] $BasePath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'PSWimToolkit\Mounts'),
+        [string] $BasePath = (Get-ToolkitDataPath -Child 'Mounts'),
 
         [Parameter()]
         [string] $WimName

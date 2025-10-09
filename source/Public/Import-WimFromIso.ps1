@@ -7,7 +7,7 @@ function Import-WimFromIso {
         [string[]] $Path,
 
         [Parameter()]
-        [string] $Destination = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'PSWimToolkit\Imports'),
+        [string] $Destination = (Join-Path -Path (Get-ToolkitDataPath) -ChildPath 'Imports'),
 
         [Parameter()]
         [switch] $SkipEsdConversion,

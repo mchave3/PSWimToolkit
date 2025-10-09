@@ -69,6 +69,23 @@ function Get-WimApplicableUpdate {
                     continue
                 }
 
+                if ($updates) {
+                    foreach ($update in $updates) {
+                        if (-not $update.OperatingSystem) {
+                            $update.OperatingSystem = $catalogProfile.OperatingSystem
+                        }
+                        if (-not $update.Release) {
+                            $update.Release = $catalogProfile.Release
+                        }
+                        if (-not $update.Architecture -and $catalogProfile.Architecture) {
+                            $update.Architecture = $catalogProfile.Architecture
+                        }
+                        if (-not $update.UpdateTypeHint -and $UpdateType -and $UpdateType.Count -gt 0) {
+                            $update.UpdateTypeHint = $UpdateType[0]
+                        }
+                    }
+                }
+
                 foreach ($update in $updates) {
                     [pscustomobject]@{
                         WimPath         = $info.Path

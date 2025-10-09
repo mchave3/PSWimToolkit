@@ -9,22 +9,83 @@ function Save-WindowsUpdate {
         [string[]] $Guid,
 
         [Parameter()]
-        [string] $Destination = (Get-Location).Path,
+        [string] $Destination,
+
+        [Parameter()]
+        [string] $OperatingSystem,
+
+        [Parameter()]
+        [string] $Release,
+
+        [Parameter()]
+        [string] $UpdateType,
 
         [switch] $DownloadAll,
         [switch] $Force
     )
 
+    function Resolve-UpdateDestinationFolder {
+        param (
+            [Parameter()]
+            [CatalogUpdate] $Update
+        )
+
+        if ($script:ExplicitDestination) {
+            return $script:DestinationPath
+        }
+
+        $osName = if ($OperatingSystem) {
+            $OperatingSystem
+        } elseif ($Update -and $Update.OperatingSystem) {
+            $Update.OperatingSystem
+        } else {
+            'General'
+        }
+
+        $releaseName = if ($Release) {
+            $Release
+        } elseif ($Update -and $Update.Release) {
+            $Update.Release
+        } else {
+            'Unspecified'
+        }
+
+        $typeName = if ($UpdateType) {
+            $UpdateType
+        } elseif ($Update -and $Update.UpdateTypeHint) {
+            $Update.UpdateTypeHint
+        } elseif ($Update -and $Update.Classification) {
+            $Update.Classification
+        } else {
+            'Updates'
+        }
+
+        $updatePath = Resolve-ToolkitUpdatePath -OperatingSystem $osName -Release $releaseName -UpdateType $typeName -Ensure
+        if ($Update) {
+            if (-not $Update.OperatingSystem) { $Update.OperatingSystem = $osName }
+            if (-not $Update.Release) { $Update.Release = $releaseName }
+            if (-not $Update.UpdateTypeHint) { $Update.UpdateTypeHint = $typeName }
+        }
+
+        return $updatePath
+    }
+
     begin {
         $script:DownloadTargets = [System.Collections.Generic.List[CatalogUpdate]]::new()
         $script:TargetGuids = [System.Collections.Generic.List[string]]::new()
+        $script:ExplicitDestination = $false
 
         try {
-            if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
-                New-Item -Path $Destination -ItemType Directory -Force | Out-Null
-                Write-ToolkitLog -Message "Created download directory at '$Destination'." -Type Info -Source 'Save-WindowsUpdate'
+            if ($Destination) {
+                if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
+                    New-Item -Path $Destination -ItemType Directory -Force | Out-Null
+                    Write-ToolkitLog -Message "Created download directory at '$Destination'." -Type Info -Source 'Save-WindowsUpdate'
+                }
+                $script:DestinationPath = (Resolve-Path -LiteralPath $Destination).ProviderPath
+                $script:ExplicitDestination = $true
+            } else {
+                $script:DestinationPath = Get-ToolkitUpdatesRoot
             }
-            $script:DestinationPath = (Resolve-Path -LiteralPath $Destination).ProviderPath
         } catch {
             Write-ToolkitLog -Message "Cannot prepare download directory '$Destination'. $($_.Exception.Message)" -Type Error -Source 'Save-WindowsUpdate'
             throw
@@ -82,12 +143,21 @@ function Save-WindowsUpdate {
             $selectedLinks = if ($DownloadAll) { $links } else { $links | Select-Object -First 1 }
             $linkIndex = 0
             $totalLinks = $selectedLinks.Count
+            $resolvedFolder = Resolve-UpdateDestinationFolder -Update $update
+            if (-not (Test-Path -LiteralPath $resolvedFolder -PathType Container)) {
+                try {
+                    New-Item -Path $resolvedFolder -ItemType Directory -Force | Out-Null
+                } catch {
+                    Write-ToolkitLog -Message "Unable to create update workspace '$resolvedFolder'. $($_.Exception.Message)" -Type Error -Source 'Save-WindowsUpdate'
+                    continue
+                }
+            }
 
             foreach ($link in $selectedLinks) {
                 $linkIndex++
                 $uri = $link.URL
                 $fileName = $uri.Split('/')[-1]
-                $targetPath = Join-Path -Path $script:DestinationPath -ChildPath $fileName
+                $targetPath = Join-Path -Path $resolvedFolder -ChildPath $fileName
 
                 if ((Test-Path -LiteralPath $targetPath) -and -not $Force) {
                     Write-ToolkitLog -Message "Skipping existing file '$fileName'. Use -Force to overwrite." -Type Info -Source 'Save-WindowsUpdate'
@@ -124,7 +194,8 @@ function Save-WindowsUpdate {
         }
 
         if ($packages.Count -gt 0) {
-            Write-ToolkitLog -Message ("Saved {0} update file(s) to {1}." -f $packages.Count, $script:DestinationPath) -Type Success -Source 'Save-WindowsUpdate'
+            $destinationNote = if ($script:ExplicitDestination) { $script:DestinationPath } else { Get-ToolkitUpdatesRoot }
+            Write-ToolkitLog -Message ("Saved {0} update file(s) to {1}." -f $packages.Count, $destinationNote) -Type Success -Source 'Save-WindowsUpdate'
             $packages
         } else {
             Write-ToolkitLog -Message 'No update packages were downloaded.' -Type Warning -Source 'Save-WindowsUpdate'

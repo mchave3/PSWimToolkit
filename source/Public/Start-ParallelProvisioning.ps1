@@ -6,7 +6,7 @@ function Start-ParallelProvisioning {
         [Alias('FullName')]
         [object[]] $WimFiles,
 
-        [Parameter(Mandatory)]
+        [Parameter()]
         [ValidateNotNullOrEmpty()]
         [string] $UpdatePath,
 
@@ -28,16 +28,26 @@ function Start-ParallelProvisioning {
 
         [switch] $Force,
 
-        [string] $OutputDirectory
+        [string] $OutputDirectory,
+
+        [string[]] $UpdateTypes = @('Cumulative Updates')
     )
 
-    $resolvedUpdatePath = (Resolve-Path -LiteralPath $UpdatePath -ErrorAction Stop).ProviderPath
+    $resolvedUpdatePath = $null
+    if ($UpdatePath) {
+        $resolvedUpdatePath = (Resolve-Path -LiteralPath $UpdatePath -ErrorAction Stop).ProviderPath
+    }
     $resolvedSxSPath = if ($SxSPath) { (Resolve-Path -LiteralPath $SxSPath -ErrorAction Stop).ProviderPath } else { $null }
+
+    $dataRoot = Get-ToolkitDataPath
 
     $logRoot = if ($LogPath) {
         (Resolve-Path -LiteralPath $LogPath -ErrorAction SilentlyContinue)?.ProviderPath ?? (New-Item -Path $LogPath -ItemType Directory -Force -ErrorAction Stop).FullName
     } else {
-        $defaultRoot = if ($script:LogConfig.DefaultDirectory) { $script:LogConfig.DefaultDirectory } else { Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\Logs' }
+        $defaultRoot = if ($script:LogConfig.DefaultDirectory) { $script:LogConfig.DefaultDirectory } else { Join-Path -Path $dataRoot -ChildPath 'Logs' }
+        if (-not (Test-Path -LiteralPath $defaultRoot)) {
+            New-Item -Path $defaultRoot -ItemType Directory -Force -ErrorAction Stop | Out-Null
+        }
         $parallelRoot = Join-Path -Path $defaultRoot -ChildPath ('Parallel_{0:yyyyMMdd_HHmmss}' -f (Get-Date))
         New-Item -Path $parallelRoot -ItemType Directory -Force -ErrorAction Stop | Out-Null
         $parallelRoot
@@ -46,7 +56,11 @@ function Start-ParallelProvisioning {
     $mountBase = if ($MountRoot) {
         (Resolve-Path -LiteralPath $MountRoot -ErrorAction SilentlyContinue)?.ProviderPath ?? (New-Item -Path $MountRoot -ItemType Directory -Force -ErrorAction Stop).FullName
     } else {
-        Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'PSWimToolkit\Mounts'
+        $defaultMountRoot = Join-Path -Path $dataRoot -ChildPath 'Mounts'
+        if (-not (Test-Path -LiteralPath $defaultMountRoot)) {
+            New-Item -Path $defaultMountRoot -ItemType Directory -Force -ErrorAction Stop | Out-Null
+        }
+        $defaultMountRoot
     }
 
     $outputBase = if ($OutputDirectory) {
@@ -89,6 +103,37 @@ function Start-ParallelProvisioning {
             $index = [int]$IndexSelection[$name]
         }
 
+        $catalogProfile = $null
+        try {
+            $wimInfo = Get-WimImageInfo -Path $resolvedWim -Index $index -ErrorAction Stop | Select-Object -First 1
+            if ($wimInfo) {
+                $catalogProfile = Resolve-WimCatalogProfile -WimInfo $wimInfo
+            }
+        } catch {
+            Write-ToolkitLog -Message ("Unable to resolve catalog profile for '{0}': {1}" -f $resolvedWim, $_.Exception.Message) -Type Warning -Source 'Start-ParallelProvisioning'
+        }
+
+        $entryUpdateTypes = if ($UpdateTypes -and $UpdateTypes.Count -gt 0) { $UpdateTypes } else { @('Updates') }
+        $updateSources = @()
+        if ($resolvedUpdatePath) {
+            $updateSources += $resolvedUpdatePath
+        } elseif ($catalogProfile) {
+            foreach ($type in $entryUpdateTypes) {
+                try {
+                    $updateSources += Resolve-ToolkitUpdatePath -OperatingSystem $catalogProfile.OperatingSystem -Release $catalogProfile.Release -UpdateType $type
+                } catch {
+                    Write-ToolkitLog -Message ("Unable to derive update path for {0}/{1}/{2}: {3}" -f $catalogProfile.OperatingSystem, $catalogProfile.Release, $type, $_.Exception.Message) -Type Warning -Source 'Start-ParallelProvisioning'
+                }
+            }
+        }
+
+        if (-not $updateSources -and -not $resolvedUpdatePath) {
+            $updateSources = @(Get-ToolkitUpdatesRoot)
+        }
+        if ($updateSources) {
+            $updateSources = $updateSources | Sort-Object -Unique
+        }
+
         $jobId = [guid]::NewGuid().ToString('N')
         $jobLogPath = Join-Path -Path $logRoot -ChildPath $jobId
         New-Item -Path $jobLogPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
@@ -104,6 +149,10 @@ function Start-ParallelProvisioning {
             Name       = $name
             LogPath    = $jobLogPath
             OutputPath = $outputTarget
+            OperatingSystem = $catalogProfile?.OperatingSystem
+            Release         = $catalogProfile?.Release
+            UpdateTypes     = $entryUpdateTypes
+            UpdateSources   = $updateSources
         }
     }
 
@@ -130,12 +179,15 @@ function Start-ParallelProvisioning {
                 $parameters = @{
                     WimPath    = $wimEntry.WimPath
                     Index      = $wimEntry.Index
-                    UpdatePath = $using:resolvedUpdatePath
+                    UpdatePath = $wimEntry.UpdateSources
                     MountPath  = $mountPath
                     LogPath    = $wimEntry.LogPath
                 }
                 if ($using:resolvedSxSPath) { $parameters['SxSPath'] = $using:resolvedSxSPath }
                 if ($wimEntry.OutputPath) { $parameters['OutputPath'] = $wimEntry.OutputPath }
+                if ($wimEntry.OperatingSystem) { $parameters['OperatingSystem'] = $wimEntry.OperatingSystem }
+                if ($wimEntry.Release) { $parameters['Release'] = $wimEntry.Release }
+                if ($wimEntry.UpdateTypes) { $parameters['UpdateType'] = $wimEntry.UpdateTypes }
                 if ($using:EnableNetFx3) { $parameters['EnableNetFx3'] = $true }
                 if ($using:Force) { $parameters['Force'] = $true }
 

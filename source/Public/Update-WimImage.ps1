@@ -10,9 +10,8 @@ function Update-WimImage {
         [ValidateRange(1, 1000)]
         [int] $Index = 1,
 
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string] $UpdatePath,
+        [Parameter()]
+        [string[]] $UpdatePath,
 
         [Parameter()]
         [string] $MountPath,
@@ -22,6 +21,15 @@ function Update-WimImage {
 
         [Parameter()]
         [string] $SxSPath,
+
+        [Parameter()]
+        [string] $OperatingSystem,
+
+        [Parameter()]
+        [string] $Release,
+
+        [Parameter()]
+        [string[]] $UpdateType,
 
         [switch] $EnableNetFx3,
         [switch] $Force,
@@ -64,7 +72,47 @@ function Update-WimImage {
         $job = [ProvisioningJob]::new($wimImage, $logFile)
         $job.Start()
 
-        $updatesRoot = (Resolve-Path -LiteralPath $UpdatePath -ErrorAction Stop).ProviderPath
+        $updateRoots = @()
+        if ($UpdatePath) {
+            foreach ($pathItem in $UpdatePath) {
+                if ([string]::IsNullOrWhiteSpace($pathItem)) { continue }
+                $resolvedRoot = (Resolve-Path -LiteralPath $pathItem -ErrorAction SilentlyContinue)?.ProviderPath
+                if ($resolvedRoot) {
+                    $updateRoots += $resolvedRoot
+                } else {
+                    Write-ToolkitLog -Message ("Update path '{0}' could not be resolved." -f $pathItem) -Type Warning -Source 'Update-WimImage'
+                }
+            }
+        }
+
+        if (-not $updateRoots -and $OperatingSystem -and $Release) {
+            $typeSet = if ($UpdateType -and $UpdateType.Count -gt 0) { $UpdateType } else { @('Cumulative Updates') }
+            foreach ($typeItem in $typeSet) {
+                try {
+                    $candidate = Resolve-ToolkitUpdatePath -OperatingSystem $OperatingSystem -Release $Release -UpdateType $typeItem
+                    if (Test-Path -LiteralPath $candidate -PathType Container) {
+                        $resolvedCandidate = (Resolve-Path -LiteralPath $candidate -ErrorAction SilentlyContinue)?.ProviderPath
+                        if ($resolvedCandidate) {
+                            $updateRoots += $resolvedCandidate
+                        }
+                    } else {
+                        Write-ToolkitLog -Message ("Expected update folder missing: {0}" -f $candidate) -Type Warning -Source 'Update-WimImage'
+                    }
+                } catch {
+                    Write-ToolkitLog -Message ("Failed to derive update folder for {0}/{1}/{2}: {3}" -f $OperatingSystem, $Release, $typeItem, $_.Exception.Message) -Type Warning -Source 'Update-WimImage'
+                }
+            }
+        }
+
+        if (-not $updateRoots) {
+            $fallback = Get-ToolkitUpdatesRoot
+            $resolvedFallback = (Resolve-Path -LiteralPath $fallback -ErrorAction SilentlyContinue)?.ProviderPath ?? $fallback
+            Write-ToolkitLog -Message ("Falling back to toolkit updates root at {0}." -f $resolvedFallback) -Type Warning -Source 'Update-WimImage'
+            $updateRoots = @($resolvedFallback)
+        }
+
+        $updateRoots = $updateRoots | Sort-Object -Unique
+
         $mountRoot = if ($MountPath) {
             $resolvedMount = (Resolve-Path -LiteralPath $MountPath -ErrorAction SilentlyContinue)?.ProviderPath
             if (-not $resolvedMount) {
@@ -72,7 +120,11 @@ function Update-WimImage {
             }
             $resolvedMount
         } else {
-            $tempMount = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("PSWimToolkit\Mounts\{0}" -f ([guid]::NewGuid().ToString('N')))
+            $mountBase = Join-Path -Path (Get-ToolkitDataPath) -ChildPath 'Mounts'
+            if (-not (Test-Path -LiteralPath $mountBase)) {
+                New-Item -Path $mountBase -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            }
+            $tempMount = Join-Path -Path $mountBase -ChildPath ([guid]::NewGuid().ToString('N'))
             New-Item -Path $tempMount -ItemType Directory -Force -ErrorAction Stop | Out-Null
             $tempMount
         }
@@ -90,9 +142,18 @@ function Update-WimImage {
             $jobMessage = "Processing $($wimImage.Path) (Index $($wimImage.Index)) - $($versionInfo.ProductName)"
             Write-ToolkitLog -Message $jobMessage -Type Info -Source 'Update-WimImage'
 
-            $updateFiles = Get-ChildItem -Path $updatesRoot -File -ErrorAction Stop | Where-Object { $_.Extension -in ('.msu', '.cab') } | Sort-Object Name
+            $updateFiles = @()
+            foreach ($updatesRoot in $updateRoots) {
+                try {
+                    $updateFiles += Get-ChildItem -Path $updatesRoot -File -ErrorAction Stop | Where-Object { $_.Extension -in ('.msu', '.cab') }
+                } catch {
+                    Write-ToolkitLog -Message ("Failed to enumerate updates under {0}: {1}" -f $updatesRoot, $_.Exception.Message) -Type Warning -Source 'Update-WimImage'
+                }
+            }
+            $updateFiles = $updateFiles | Sort-Object FullName -Unique
             if (-not $updateFiles) {
-                Write-ToolkitLog -Message ("No update packages found in {0}." -f $updatesRoot) -Type Warning -Source 'Update-WimImage'
+                $rootSummary = ($updateRoots -join ', ')
+                Write-ToolkitLog -Message ("No update packages found in {0}." -f $rootSummary) -Type Warning -Source 'Update-WimImage'
             }
 
             if ($versionInfo.Channel -eq 'Windows 11 24H2') {

@@ -115,6 +115,11 @@ function Show-PSWimToolkitMainWindow {
 
     $moduleInfo = Get-Module -Name PSWimToolkit | Select-Object -First 1
     $moduleVersion = if ($moduleInfo) { $moduleInfo.Version.ToString() } else { 'Unknown' }
+    $workspaceRoot = Get-ToolkitDataPath
+    $guiMountRoot = Join-Path -Path $workspaceRoot -ChildPath 'Mounts'
+    $guiLogRoot = Join-Path -Path $workspaceRoot -ChildPath 'Logs'
+    $guiImportRoot = Join-Path -Path $workspaceRoot -ChildPath 'Imports'
+    $guiUpdatesRoot = Get-ToolkitUpdatesRoot
 
     $state = [pscustomobject]@{
         Job               = $null
@@ -124,9 +129,10 @@ function Show-PSWimToolkitMainWindow {
         AllLogData        = [System.Collections.Generic.List[psobject]]::new()
         ModulePath        = $ModulePath
         ModuleVersion     = $moduleVersion
-        MountRoot         = Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\GUIMounts'
-        LogBase           = Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\GUILogs'
-        ImportRoot        = Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\Imports'
+        MountRoot         = $guiMountRoot
+        LogBase           = $guiLogRoot
+        ImportRoot        = $guiImportRoot
+        UpdatesRoot       = $guiUpdatesRoot
         WimMetadataCache  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[psobject]]]::new()
         CatalogFacets     = $null
     }
@@ -141,6 +147,10 @@ function Show-PSWimToolkitMainWindow {
 
     if (-not (Test-Path -LiteralPath $state.ImportRoot)) {
         New-Item -Path $state.ImportRoot -ItemType Directory -Force | Out-Null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($controls.UpdatePathTextBox.Text)) {
+        $controls.UpdatePathTextBox.Text = $state.UpdatesRoot
     }
 
     function Invoke-UiAction {

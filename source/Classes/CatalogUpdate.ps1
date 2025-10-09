@@ -8,6 +8,10 @@ class CatalogUpdate {
     [UInt64] $SizeInBytes
     [string] $Guid
     [string[]] $FileNames
+    [string] $OperatingSystem
+    [string] $Release
+    [string] $UpdateTypeHint
+    [string] $Architecture
 
     CatalogUpdate() {}
 

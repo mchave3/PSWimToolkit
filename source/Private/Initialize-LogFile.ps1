@@ -5,8 +5,9 @@ function Initialize-LogFile {
     )
 
     if (-not (Get-Variable -Name 'LogConfig' -Scope Script -ErrorAction SilentlyContinue)) {
+        $defaultLogDirectory = Get-ToolkitDataPath -Child 'Logs'
         $script:LogConfig = [ordered]@{
-            DefaultDirectory   = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'PSWimToolkit\Logs'
+            DefaultDirectory   = $defaultLogDirectory
             MaxFileSizeBytes   = 10MB
             MaxFileCount       = 10
             EnableConsole      = $true
@@ -18,7 +19,7 @@ function Initialize-LogFile {
 
     $logDirectory = $script:LogConfig.DefaultDirectory
     if ([string]::IsNullOrWhiteSpace($logDirectory)) {
-        $logDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath 'PSWimToolkit\Logs'
+        $logDirectory = Get-ToolkitDataPath -Child 'Logs'
         $script:LogConfig.DefaultDirectory = $logDirectory
     }
 

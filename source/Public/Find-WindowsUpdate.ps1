@@ -283,6 +283,29 @@ function Find-WindowsUpdate {
             'Product' { $updates = $updates | Sort-Object Products -Descending:$Descending.IsPresent }
         }
 
+        if ($updates) {
+            foreach ($update in $updates) {
+                if (-not $update) { continue }
+
+                if ($PSCmdlet.ParameterSetName -eq 'OperatingSystem') {
+                    if ($OperatingSystem) { $update.OperatingSystem = $OperatingSystem }
+                    if ($Version) { $update.Release = $Version }
+                }
+
+                if (-not $update.Architecture -and $Architecture -and $Architecture -ne 'All') {
+                    $update.Architecture = $Architecture
+                }
+
+                if (-not $update.UpdateTypeHint) {
+                    if ($UpdateType -and $UpdateType.Count -eq 1) {
+                        $update.UpdateTypeHint = $UpdateType[0]
+                    } elseif ($update.Classification) {
+                        $update.UpdateTypeHint = $update.Classification
+                    }
+                }
+            }
+        }
+
         $globalUpdates += $updates
     }
 
