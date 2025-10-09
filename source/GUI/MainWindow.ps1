@@ -48,6 +48,8 @@ function Show-PSWimToolkitMainWindow {
         AboutMenuItem         = $window.FindName('AboutMenuItem')
         DocumentationMenuItem = $window.FindName('DocumentationMenuItem')
         AddWimButton          = $window.FindName('AddWimButton')
+        ImportIsoButton       = $window.FindName('ImportIsoButton')
+        WimDetailsButton      = $window.FindName('WimDetailsButton')
         RemoveWimButton       = $window.FindName('RemoveWimButton')
         ClearWimButton        = $window.FindName('ClearWimButton')
         WimGrid               = $window.FindName('WimGrid')
@@ -61,6 +63,7 @@ function Show-PSWimToolkitMainWindow {
         ForceCheckBox         = $window.FindName('ForceCheckBox')
         VerboseLogCheckBox    = $window.FindName('VerboseLogCheckBox')
         IncludePreviewCheckBox = $window.FindName('IncludePreviewCheckBox')
+        AutoDetectButton      = $window.FindName('AutoDetectButton')
         SearchCatalogButton   = $window.FindName('SearchCatalogButton')
         StartButton           = $window.FindName('StartButton')
         StopButton            = $window.FindName('StopButton')
@@ -123,6 +126,9 @@ function Show-PSWimToolkitMainWindow {
         ModuleVersion     = $moduleVersion
         MountRoot         = Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\GUIMounts'
         LogBase           = Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\GUILogs'
+        ImportRoot        = Join-Path ([System.IO.Path]::GetTempPath()) 'PSWimToolkit\Imports'
+        WimMetadataCache  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[psobject]]]::new()
+        CatalogFacets     = $null
     }
 
     if (-not (Test-Path -LiteralPath $state.MountRoot)) {
@@ -131,6 +137,10 @@ function Show-PSWimToolkitMainWindow {
 
     if (-not (Test-Path -LiteralPath $state.LogBase)) {
         New-Item -Path $state.LogBase -ItemType Directory -Force | Out-Null
+    }
+
+    if (-not (Test-Path -LiteralPath $state.ImportRoot)) {
+        New-Item -Path $state.ImportRoot -ItemType Directory -Force | Out-Null
     }
 
     function Invoke-UiAction {
@@ -159,7 +169,73 @@ function Show-PSWimToolkitMainWindow {
             Index   = $Index
             Status  = 'Pending'
             Details = ''
+            Metadata = $null
         }
+    }
+
+    function Get-WimMetadata {
+        param (
+            [Parameter(Mandatory)]
+            [string] $Path,
+            [switch] $Refresh
+        )
+
+        $resolved = [System.IO.Path]::GetFullPath($Path)
+        if (-not $Refresh -and $state.WimMetadataCache.ContainsKey($resolved)) {
+            return $state.WimMetadataCache[$resolved]
+        }
+
+        try {
+            $metadata = Get-WimImageInfo -Path $resolved -ErrorAction Stop | ForEach-Object {
+                [pscustomobject]@{
+                    Path         = $_.Path
+                    Index        = $_.Index
+                    Name         = $_.Name
+                    Architecture = $_.Architecture
+                    Version      = $_.Version.ToString()
+                    SizeGB       = [Math]::Round($_.Size / 1GB, 2)
+                    Description  = $_.Description
+                }
+            }
+        } catch {
+            Write-Warning "Failed to gather WIM metadata for $resolved : $($_.Exception.Message)"
+            $metadata = @()
+        }
+
+        if ($metadata) {
+            $state.WimMetadataCache[$resolved] = [System.Collections.Generic.List[psobject]]::new()
+            foreach ($entry in $metadata) {
+                $state.WimMetadataCache[$resolved].Add($entry) | Out-Null
+            }
+        }
+
+        return $metadata
+    }
+
+    function Refresh-WimItemDetails {
+        param (
+            [psobject] $Item,
+            [switch] $Force
+        )
+
+        if (-not $Item) { return }
+        $metadata = Get-WimMetadata -Path $Item.Path -Refresh:$Force.IsPresent
+        if ($metadata -and $metadata.Count -gt 0) {
+            $primary = $metadata | Where-Object { $_.Index -eq $Item.Index } | Select-Object -First 1
+            if (-not $primary) { $primary = $metadata | Select-Object -First 1 }
+            if ($primary) {
+                $Item.Details = "{0} ({1})" -f $primary.Name, $primary.Architecture
+                $Item.Metadata = $metadata
+            }
+        }
+    }
+
+    function Get-SelectedWimItems {
+        $selection = @($controls.WimGrid.SelectedItems)
+        if ($selection.Count -eq 0) {
+            return @($wimItems)
+        }
+        return $selection
     }
 
     function Update-Status {
@@ -224,16 +300,7 @@ function Show-PSWimToolkitMainWindow {
                 if (-not $entry.Path) { continue }
                 $indexValue = if ($entry.Index) { [int]$entry.Index } else { 1 }
                 $item = New-WimItem -Path $entry.Path -Index $indexValue
-                try {
-                    $info = Get-WimImageInfo -Path $entry.Path -Index $indexValue -ErrorAction Stop
-                    if ($info) {
-                        $item.Details = $info.Name
-                    } else {
-                        $item.Details = 'Pending'
-                    }
-                } catch {
-                    $item.Details = 'Pending'
-                }
+                Refresh-WimItemDetails -Item $item -Force
                 $wimItems.Add($item)
             }
         }
@@ -285,6 +352,98 @@ function Show-PSWimToolkitMainWindow {
         Update-Status -Message "Configuration saved to $Path"
     }
 
+    function Show-WimDetailsDialog {
+        param (
+            [Parameter(Mandatory)]
+            [psobject[]] $Items,
+            [switch] $ForceRefresh
+        )
+
+        if (-not $Items -or $Items.Count -eq 0) {
+            [System.Windows.MessageBox]::Show('Select at least one WIM entry to review details.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+            return
+        }
+
+        $detailsXamlPath = Join-Path -Path $PSScriptRoot -ChildPath 'WimDetailsDialog.xaml'
+        if (-not (Test-Path -LiteralPath $detailsXamlPath -PathType Leaf)) {
+            throw "Unable to locate details dialog layout at $detailsXamlPath."
+        }
+
+        [xml]$detailsXml = Get-Content -LiteralPath $detailsXamlPath -Raw
+        $detailsReader = New-Object System.Xml.XmlNodeReader $detailsXml
+        $dialog = [Windows.Markup.XamlReader]::Load($detailsReader)
+        $dialog.Owner = $window
+
+        $detailsControls = @{
+            HeaderText     = $dialog.FindName('HeaderText')
+            WimDetailsList = $dialog.FindName('WimDetailsList')
+            StatusText     = $dialog.FindName('StatusText')
+            CopyButton     = $dialog.FindName('CopyDetailsButton')
+            RefreshButton  = $dialog.FindName('RefreshButton')
+            CloseButton    = $dialog.FindName('CloseButton')
+        }
+
+        foreach ($key in $detailsControls.Keys) {
+            if (-not $detailsControls[$key]) {
+                throw "Unable to locate WIM details dialog control '$key'."
+            }
+        }
+
+        $detailItems = [System.Collections.ObjectModel.ObservableCollection[psobject]]::new()
+        $detailsControls.WimDetailsList.ItemsSource = $detailItems
+
+        function Populate-WimDetails {
+            param (
+                [bool] $RefreshMetadata
+            )
+
+            $detailItems.Clear()
+            foreach ($item in $Items) {
+                $metadata = Get-WimMetadata -Path $item.Path -Refresh:$RefreshMetadata
+                foreach ($meta in $metadata) {
+                    $detailItems.Add([pscustomobject]@{
+                        Path         = $meta.Path
+                        WimName      = [System.IO.Path]::GetFileName($meta.Path)
+                        Index        = $meta.Index
+                        Name         = $meta.Name
+                        Architecture = $meta.Architecture
+                        Version      = $meta.Version
+                        SizeGB       = $meta.SizeGB
+                        Description  = $meta.Description
+                    }) | Out-Null
+                }
+            }
+
+            $detailsControls.HeaderText.Text = "WIM details for {0} selection(s)" -f $Items.Count
+            $detailsControls.StatusText.Text = "Loaded $($detailItems.Count) index record(s)."
+        }
+
+        Populate-WimDetails -RefreshMetadata:$ForceRefresh.IsPresent
+
+        $detailsControls.RefreshButton.Add_Click({
+            Populate-WimDetails -RefreshMetadata:$true
+        })
+
+        $detailsControls.CopyButton.Add_Click({
+            $selection = @($detailsControls.WimDetailsList.SelectedItems)
+            if ($selection.Count -eq 0) {
+                $selection = @($detailItems)
+            }
+            if ($selection.Count -eq 0) { return }
+            $payload = $selection | ForEach-Object {
+                "Path: {0}`r`nIndex: {1}`r`nName: {2}`r`nArchitecture: {3}`r`nVersion: {4}`r`nSize (GB): {5}`r`nDescription: {6}" -f $_.Path, $_.Index, $_.Name, $_.Architecture, $_.Version, $_.SizeGB, $_.Description
+            }
+            [System.Windows.Clipboard]::SetText(($payload -join "`r`n`r`n"))
+            $detailsControls.StatusText.Text = "Copied $($selection.Count) record(s) to clipboard."
+        })
+
+        $detailsControls.CloseButton.Add_Click({
+            $dialog.Close()
+        })
+
+        $null = $dialog.ShowDialog()
+    }
+
     function Show-CatalogDialog {
         $catalogXamlPath = Join-Path -Path $PSScriptRoot -ChildPath 'CatalogDialog.xaml'
         if (-not (Test-Path -LiteralPath $catalogXamlPath -PathType Leaf)) {
@@ -297,15 +456,19 @@ function Show-PSWimToolkitMainWindow {
         $dialog.Owner = $window
 
         $catalogControls = @{
-            SearchTextBox         = $dialog.FindName('SearchTextBox')
-            SearchButton          = $dialog.FindName('SearchButton')
-            AllPagesCheckBox      = $dialog.FindName('AllPagesCheckBox')
+            SearchTextBox          = $dialog.FindName('SearchTextBox')
+            SearchButton           = $dialog.FindName('SearchButton')
+            OperatingSystemComboBox = $dialog.FindName('OperatingSystemComboBox')
+            ReleaseComboBox        = $dialog.FindName('ReleaseComboBox')
+            ArchitectureComboBox   = $dialog.FindName('ArchitectureComboBox')
+            ChannelComboBox        = $dialog.FindName('ChannelComboBox')
+            AllPagesCheckBox       = $dialog.FindName('AllPagesCheckBox')
             IncludePreviewCheckBox = $dialog.FindName('IncludePreviewCheckBox')
-            ResultsList           = $dialog.FindName('ResultsList')
-            DownloadButton        = $dialog.FindName('DownloadButton')
-            CopyButton            = $dialog.FindName('CopyButton')
-            CloseButton           = $dialog.FindName('CloseButton')
-            StatusText            = $dialog.FindName('CatalogStatusText')
+            ResultsList            = $dialog.FindName('ResultsList')
+            DownloadButton         = $dialog.FindName('DownloadButton')
+            CopyButton             = $dialog.FindName('CopyButton')
+            CloseButton            = $dialog.FindName('CloseButton')
+            StatusText             = $dialog.FindName('CatalogStatusText')
         }
 
         foreach ($key in $catalogControls.Keys) {
@@ -314,7 +477,61 @@ function Show-PSWimToolkitMainWindow {
             }
         }
 
+        if (-not $state.CatalogFacets) {
+            $state.CatalogFacets = Get-ToolkitCatalogFacet
+        }
+
         $catalogControls.IncludePreviewCheckBox.IsChecked = $controls.IncludePreviewCheckBox.IsChecked
+
+        $operatingSystems = $state.CatalogFacets.OperatingSystems
+        $architectures = @('All') + $state.CatalogFacets.Architectures
+        $channels = $state.CatalogFacets.Channels
+
+        $catalogControls.OperatingSystemComboBox.Items.Clear()
+        foreach ($os in $operatingSystems) {
+            $null = $catalogControls.OperatingSystemComboBox.Items.Add($os.Name)
+        }
+
+        $catalogControls.ArchitectureComboBox.Items.Clear()
+        foreach ($arch in $architectures) {
+            $null = $catalogControls.ArchitectureComboBox.Items.Add($arch)
+        }
+        $catalogControls.ArchitectureComboBox.SelectedIndex = 0
+
+        $catalogControls.ChannelComboBox.Items.Clear()
+        foreach ($channel in $channels) {
+            $null = $catalogControls.ChannelComboBox.Items.Add($channel)
+        }
+        $catalogControls.ChannelComboBox.SelectedIndex = 0
+
+        function Set-ReleaseOptions {
+            param (
+                [string] $OperatingSystemName
+            )
+
+            $catalogControls.ReleaseComboBox.Items.Clear()
+            if (-not $OperatingSystemName) { return }
+
+            $osEntry = $operatingSystems | Where-Object { $_.Name -eq $OperatingSystemName } | Select-Object -First 1
+            if (-not $osEntry) { return }
+
+            foreach ($release in $osEntry.Releases) {
+                $null = $catalogControls.ReleaseComboBox.Items.Add($release.Name)
+            }
+            $catalogControls.ReleaseComboBox.SelectedIndex = 0
+        }
+
+        $catalogControls.OperatingSystemComboBox.Add_SelectionChanged({
+            $selectedOs = [string]$catalogControls.OperatingSystemComboBox.SelectedItem
+            Set-ReleaseOptions -OperatingSystemName $selectedOs
+        })
+
+        if ($catalogControls.OperatingSystemComboBox.Items.Count -gt 0) {
+            $catalogControls.OperatingSystemComboBox.SelectedItem = 'Windows 11'
+            if (-not $catalogControls.OperatingSystemComboBox.SelectedItem) {
+                $catalogControls.OperatingSystemComboBox.SelectedIndex = 0
+            }
+        }
 
         $resultItems = [System.Collections.ObjectModel.ObservableCollection[psobject]]::new()
         $catalogControls.ResultsList.ItemsSource = $resultItems
@@ -330,24 +547,54 @@ function Show-PSWimToolkitMainWindow {
 
         $catalogControls.SearchButton.Add_Click({
             $query = $catalogControls.SearchTextBox.Text
-            if ([string]::IsNullOrWhiteSpace($query)) {
-                Set-CatalogStatus -Message 'Enter a search term or KB number before searching.'
+            $selectedOs = [string]$catalogControls.OperatingSystemComboBox.SelectedItem
+            $selectedRelease = [string]$catalogControls.ReleaseComboBox.SelectedItem
+            $selectedArch = [string]$catalogControls.ArchitectureComboBox.SelectedItem
+            if (-not $selectedArch) { $selectedArch = 'All' }
+            $selectedChannel = [string]$catalogControls.ChannelComboBox.SelectedItem
+            if (-not $selectedChannel) { $selectedChannel = 'General Availability' }
+
+            $includePreview = [bool]$catalogControls.IncludePreviewCheckBox.IsChecked
+            $allPages = [bool]$catalogControls.AllPagesCheckBox.IsChecked
+            $useFacet = -not [string]::IsNullOrWhiteSpace($selectedOs) -and -not [string]::IsNullOrWhiteSpace($selectedRelease)
+
+            if (-not $useFacet -and [string]::IsNullOrWhiteSpace($query)) {
+                Set-CatalogStatus -Message 'Provide a search term or select an operating system and release.'
                 return
             }
 
             $catalogControls.SearchButton.IsEnabled = $false
             $resultItems.Clear()
-            Set-CatalogStatus -Message "Searching catalog for '$query'..."
+            $descriptor = if ($useFacet) {
+                "{0} {1} ({2})" -f $selectedOs, $selectedRelease, $selectedArch
+            } else {
+                "'$query'"
+            }
+            Set-CatalogStatus -Message "Searching catalog for $descriptor..."
 
             try {
-                $includePreview = [bool]$catalogControls.IncludePreviewCheckBox.IsChecked
-                $allPages = [bool]$catalogControls.AllPagesCheckBox.IsChecked
-                $found = Find-WindowsUpdate -Search $query -IncludePreview:$includePreview -AllPages:$allPages -ErrorAction Stop
+                if ($useFacet) {
+                    $found = Find-WindowsUpdate -OperatingSystem $selectedOs -Version $selectedRelease -Architecture $selectedArch -IncludePreview:$includePreview -AllPages:$allPages -ErrorAction Stop
+                    if (-not [string]::IsNullOrWhiteSpace($query)) {
+                        $pattern = [regex]::Escape($query)
+                        $found = $found | Where-Object { $_.Title -match $pattern -or $_.Products -match $pattern }
+                    }
+                } else {
+                    $found = Find-WindowsUpdate -Search $query -IncludePreview:$includePreview -AllPages:$allPages -ErrorAction Stop
+                }
+
+                if ($selectedChannel -eq 'Preview') {
+                    $found = $found | Where-Object { $_.Title -match '(?i)preview' -or $_.Classification -match '(?i)preview' }
+                } elseif ($selectedChannel -eq 'Security Only') {
+                    $found = $found | Where-Object { $_.Classification -match '(?i)security' -or $_.Title -match '(?i)security' }
+                }
+
                 foreach ($update in $found) {
                     $resultItems.Add($update) | Out-Null
                 }
+
                 if ($resultItems.Count -eq 0) {
-                    Set-CatalogStatus -Message 'No updates found for the specified query.'
+                    Set-CatalogStatus -Message 'No updates found for the specified criteria.'
                 } else {
                     Set-CatalogStatus -Message "Found $($resultItems.Count) update(s)."
                 }
@@ -414,6 +661,158 @@ function Show-PSWimToolkitMainWindow {
 
         $null = $dialog.ShowDialog()
         $controls.IncludePreviewCheckBox.IsChecked = $catalogControls.IncludePreviewCheckBox.IsChecked
+    }
+
+    function Show-AutoDetectDialog {
+        param (
+            [Parameter(Mandatory)]
+            [psobject[]] $Items
+        )
+
+        if (-not $Items -or $Items.Count -eq 0) {
+            [System.Windows.MessageBox]::Show('Select at least one WIM entry before running auto detect.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+            return
+        }
+
+        $dialogPath = Join-Path -Path $PSScriptRoot -ChildPath 'AutoDetectDialog.xaml'
+        if (-not (Test-Path -LiteralPath $dialogPath -PathType Leaf)) {
+            throw "Unable to locate auto detect dialog layout at $dialogPath."
+        }
+
+        [xml]$dialogXml = Get-Content -LiteralPath $dialogPath -Raw
+        $dialogReader = New-Object System.Xml.XmlNodeReader $dialogXml
+        $dialog = [Windows.Markup.XamlReader]::Load($dialogReader)
+        $dialog.Owner = $window
+
+        $detectControls = @{
+            DownloadPathTextBox       = $dialog.FindName('DownloadPathTextBox')
+            BrowseDownloadPathButton  = $dialog.FindName('BrowseDownloadPathButton')
+            AutoDetectResults         = $dialog.FindName('AutoDetectResults')
+            QueueDownloadButton       = $dialog.FindName('QueueDownloadButton')
+            CopyUpdatesButton         = $dialog.FindName('CopyUpdatesButton')
+            CloseButton               = $dialog.FindName('CloseButton')
+            StatusText                = $dialog.FindName('AutoDetectStatusText')
+        }
+
+        foreach ($key in $detectControls.Keys) {
+            if (-not $detectControls[$key]) {
+                throw "Unable to locate auto-detect dialog control '$key'."
+            }
+        }
+
+        $downloadPath = if (-not [string]::IsNullOrWhiteSpace($controls.UpdatePathTextBox.Text)) {
+            $controls.UpdatePathTextBox.Text
+        } else {
+            $state.ImportRoot
+        }
+
+        $detectControls.DownloadPathTextBox.Text = $downloadPath
+
+        $resultCollection = [System.Collections.ObjectModel.ObservableCollection[psobject]]::new()
+        $detectControls.AutoDetectResults.ItemsSource = $resultCollection
+
+        function Update-AutoDetectStatus {
+            param ([string] $Message)
+            $detectControls.StatusText.Text = $Message
+        }
+
+        function Invoke-AutoDetect {
+            $resultCollection.Clear()
+            Update-AutoDetectStatus -Message 'Detecting updates...'
+            $groups = $Items | Group-Object -Property Path
+            $includePreview = [bool]$controls.IncludePreviewCheckBox.IsChecked
+            foreach ($group in $groups) {
+                $indices = $group.Group | ForEach-Object { $_.Index } | Where-Object { $_ } | Select-Object -Unique
+                if (-not $indices -or $indices.Count -eq 0) { $indices = @(1) }
+                try {
+                    $applicable = Get-WimApplicableUpdate -Path $group.Name -Index $indices -IncludePreview:$includePreview -ErrorAction Stop
+                } catch {
+                    Update-AutoDetectStatus -Message "Auto detect failed for $($group.Name): $($_.Exception.Message)"
+                    continue
+                }
+
+                foreach ($match in $applicable) {
+                    if (-not $match.Update) { continue }
+                    $resultCollection.Add([pscustomobject]@{
+                        WimPath       = $match.WimPath
+                        WimName       = $match.WimName
+                        Index         = $match.WimIndex
+                        OperatingSystem = $match.OperatingSystem
+                        Release       = $match.Release
+                        Architecture  = $match.Architecture
+                        KB            = $match.Update.KB
+                        Title         = $match.Update.Title
+                        Classification = $match.Update.Classification
+                        LastUpdated   = $match.Update.LastUpdated
+                        Guid          = $match.Update.Guid
+                        CatalogUpdate = $match.Update
+                    }) | Out-Null
+                }
+            }
+
+            if ($resultCollection.Count -eq 0) {
+                Update-AutoDetectStatus -Message 'No catalog updates detected for the selected WIM images.'
+            } else {
+                Update-AutoDetectStatus -Message "Detected $($resultCollection.Count) update(s)."
+            }
+        }
+
+        Invoke-AutoDetect
+
+        $detectControls.BrowseDownloadPathButton.Add_Click({
+            $dialogBrowse = [System.Windows.Forms.FolderBrowserDialog]::new()
+            $dialogBrowse.Description = 'Select destination folder for detected update downloads'
+            if ($dialogBrowse.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                $detectControls.DownloadPathTextBox.Text = $dialogBrowse.SelectedPath
+            }
+        })
+
+        $detectControls.QueueDownloadButton.Add_Click({
+            $destination = $detectControls.DownloadPathTextBox.Text
+            if (-not (Test-Path -LiteralPath $destination -PathType Container)) {
+                [System.Windows.MessageBox]::Show('Specify a valid download directory before queueing downloads.', 'PSWimToolkit', 'OK', 'Warning') | Out-Null
+                return
+            }
+
+            $selected = @($detectControls.AutoDetectResults.SelectedItems)
+            if ($selected.Count -eq 0) {
+                $selected = @($resultCollection)
+            }
+            if ($selected.Count -eq 0) {
+                [System.Windows.MessageBox]::Show('No updates available to download.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+                return
+            }
+
+            $updates = $selected | ForEach-Object { $_.CatalogUpdate } | Where-Object { $_ } | Select-Object -Unique
+
+            try {
+                Update-AutoDetectStatus -Message 'Downloading detected updates...'
+                Save-WindowsUpdate -InputObject $updates -Destination $destination -DownloadAll:$true -ErrorAction Stop | Out-Null
+                Update-AutoDetectStatus -Message "Downloaded $($updates.Count) update(s) to $destination."
+                $controls.UpdatePathTextBox.Text = $destination
+            } catch {
+                Update-AutoDetectStatus -Message "Download failed: $($_.Exception.Message)"
+            }
+        })
+
+        $detectControls.CopyUpdatesButton.Add_Click({
+            $selection = @($detectControls.AutoDetectResults.SelectedItems)
+            if ($selection.Count -eq 0) {
+                $selection = @($resultCollection)
+            }
+            if ($selection.Count -eq 0) { return }
+            $buffer = $selection | ForEach-Object {
+                "WIM: {0}`r`nIndex: {1}`r`nKB: {2}`r`nTitle: {3}`r`nClassification: {4}`r`nLast Updated: {5}`r`nGuid: {6}" -f $_.WimName, $_.Index, $_.KB, $_.Title, $_.Classification, $_.LastUpdated, $_.Guid
+            }
+            [System.Windows.Clipboard]::SetText(($buffer -join "`r`n`r`n"))
+            Update-AutoDetectStatus -Message "Copied $($selection.Count) entries."
+        })
+
+        $detectControls.CloseButton.Add_Click({
+            $dialog.Close()
+        })
+
+        $null = $dialog.ShowDialog()
     }
 
     function Update-LogView {
@@ -489,8 +888,11 @@ function Show-PSWimToolkitMainWindow {
         $controls.ExportLogsMenuItem.IsEnabled = $Enabled
         $controls.SearchCatalogButton.IsEnabled = $Enabled
         $controls.AddWimButton.IsEnabled = $Enabled
+        $controls.ImportIsoButton.IsEnabled = $Enabled
+        $controls.WimDetailsButton.IsEnabled = $Enabled
         $controls.RemoveWimButton.IsEnabled = $Enabled
         $controls.ClearWimButton.IsEnabled = $Enabled
+        $controls.AutoDetectButton.IsEnabled = $Enabled
         $controls.StartButton.IsEnabled = $Enabled
         $controls.BrowseUpdateButton.IsEnabled = $Enabled
         $controls.BrowseSxSButton.IsEnabled = $Enabled
@@ -744,17 +1146,44 @@ function Show-PSWimToolkitMainWindow {
             foreach ($file in $dialog.FileNames) {
                 if ($wimItems | Where-Object { $_.Path -eq $file }) { continue }
                 $item = New-WimItem -Path $file
-                try {
-                    $info = Get-WimImageInfo -Path $file -ErrorAction Stop
-                    if ($info -and $info.Count -gt 0) {
-                        $item.Index = $info[0].Index
-                        $item.Details = $info[0].Name
-                    }
-                } catch {
-                    $item.Details = 'Ready'
-                }
                 $wimItems.Add($item)
+                Refresh-WimItemDetails -Item $item -Force
+                if ($item.Metadata -and $item.Metadata.Count -gt 0) {
+                    $item.Index = $item.Metadata[0].Index
+                }
             }
+        }
+    })
+
+    $controls.ImportIsoButton.Add_Click({
+        $dialog = [Microsoft.Win32.OpenFileDialog]::new()
+        $dialog.Filter = 'ISO images (*.iso)|*.iso|All files (*.*)|*.*'
+        $dialog.Multiselect = $true
+        if (-not $dialog.ShowDialog()) { return }
+
+        Update-Status -Message 'Importing ISO image(s)...'
+        try {
+            $imports = Import-WimFromIso -Path $dialog.FileNames -Destination $state.ImportRoot -ErrorAction Stop
+            $added = 0
+            foreach ($import in $imports) {
+                if ([System.IO.Path]::GetExtension($import.Destination) -ne '.wim') { continue }
+                if ($wimItems | Where-Object { $_.Path -eq $import.Destination }) { continue }
+                $item = New-WimItem -Path $import.Destination
+                $wimItems.Add($item)
+                Refresh-WimItemDetails -Item $item -Force
+                if ($item.Metadata -and $item.Metadata.Count -gt 0) {
+                    $item.Index = $item.Metadata[0].Index
+                }
+                $added++
+            }
+            $message = if ($added -gt 0) {
+                "Imported $added WIM file(s) from ISO."
+            } else {
+                'Import completed. No new WIM files were added.'
+            }
+            Update-Status -Message $message
+        } catch {
+            Update-Status -Message "ISO import failed: $($_.Exception.Message)" -Brush (New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromRgb(0xD1,0x34,0x38)))
         }
     })
 
@@ -763,11 +1192,33 @@ function Show-PSWimToolkitMainWindow {
         if (-not $selected -or $selected.Count -eq 0) { return }
         foreach ($item in @($selected)) {
             $null = $wimItems.Remove($item)
+            $resolved = [System.IO.Path]::GetFullPath($item.Path)
+            if ($state.WimMetadataCache.ContainsKey($resolved)) {
+                $null = $state.WimMetadataCache.Remove($resolved)
+            }
         }
     })
 
     $controls.ClearWimButton.Add_Click({
         $wimItems.Clear()
+        $state.WimMetadataCache.Clear()
+    })
+
+    $controls.WimDetailsButton.Add_Click({
+        $selection = Get-SelectedWimItems
+        if (-not $selection -or $selection.Count -eq 0) {
+            [System.Windows.MessageBox]::Show('Select a WIM entry first.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+            return
+        }
+        Show-WimDetailsDialog -Items $selection
+    })
+
+    $controls.WimGrid.Add_CellEditEnding({
+        param($sender, $eventArgs)
+        $item = $eventArgs.Row.Item
+        if ($item) {
+            Refresh-WimItemDetails -Item $item -Force
+        }
     })
 
     $controls.BrowseUpdateButton.Add_Click({
@@ -835,6 +1286,14 @@ function Show-PSWimToolkitMainWindow {
 
     $controls.AutoScrollCheckBox.Add_Click({
         Update-LogView
+    })
+
+    $controls.AutoDetectButton.Add_Click({
+        $selection = @($controls.WimGrid.SelectedItems)
+        if ($selection.Count -eq 0) {
+            $selection = @($wimItems)
+        }
+        Show-AutoDetectDialog -Items $selection
     })
 
     $controls.SearchCatalogButton.Add_Click({

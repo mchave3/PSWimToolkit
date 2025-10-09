@@ -39,7 +39,7 @@
             </MenuItem>
         </Menu>
 
-        <GroupBox Header="WIM Selection"
+        <GroupBox Header="WIM Management"
                   Grid.Row="1"
                   Margin="0,0,0,12">
             <Grid>
@@ -51,8 +51,14 @@
                             Grid.Row="0"
                             HorizontalAlignment="Left">
                     <Button x:Name="AddWimButton"
-                            Content="Add WIM..."
+                            Content="Import WIM..."
                             Margin="0,0,8,0"/>
+                    <Button x:Name="ImportIsoButton"
+                            Content="Import ISO..."
+                            Margin="0,0,8,0"/>
+                    <Button x:Name="WimDetailsButton"
+                            Content="Details..."
+                            Margin="0,0,16,0"/>
                     <Button x:Name="RemoveWimButton"
                             Content="Remove Selected"
                             Margin="0,0,8,0"/>
@@ -176,6 +182,10 @@
                     <CheckBox x:Name="IncludePreviewCheckBox"
                               Content="Include preview updates"
                               Margin="0,0,20,0"/>
+                    <Button x:Name="AutoDetectButton"
+                            Content="Auto Detect..."
+                            Margin="0,0,12,0"
+                            HorizontalAlignment="Left"/>
                     <Button x:Name="SearchCatalogButton"
                             Content="Search Catalog..."
                             HorizontalAlignment="Left"/>
