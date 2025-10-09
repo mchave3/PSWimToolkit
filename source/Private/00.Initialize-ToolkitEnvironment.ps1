@@ -1,6 +1,8 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$script:ModuleInitStartTime = Get-Date
+
 if (-not (Get-Variable -Name 'ModuleRoot' -Scope Script -ErrorAction SilentlyContinue)) {
     $script:ModuleRoot = Split-Path -Parent $PSCommandPath
     if (-not $script:ModuleRoot) {
@@ -45,6 +47,7 @@ $workspaceFolders = $script:WorkspacePaths.Values | Sort-Object -Unique
 foreach ($folder in $workspaceFolders) {
     if (-not (Test-Path -LiteralPath $folder)) {
         New-Item -Path $folder -ItemType Directory -Force | Out-Null
+        Write-Verbose "Created workspace directory: $folder"
     }
 }
 
@@ -76,8 +79,10 @@ if (-not (Get-Variable -Name 'LogConfig' -Scope Script -ErrorAction SilentlyCont
         DefaultLogLevel    = 'Info'
         SupportedLogLevels = @('Debug', 'Info', 'Warning', 'Error', 'Success', 'Stage')
     }
+    Write-Verbose "Initialized LogConfig with directory: $($script:WorkspacePaths.Logs)"
 } elseif (-not $script:LogConfig.DefaultDirectory) {
     $script:LogConfig.DefaultDirectory = $script:WorkspacePaths.Logs
+    Write-Verbose "Updated LogConfig directory: $($script:WorkspacePaths.Logs)"
 }
 
 try {
@@ -89,9 +94,15 @@ try {
         }
 
         Add-Type -Path $htmlAgilityPackPath
+        Write-Verbose "Loaded HtmlAgilityPack from: $htmlAgilityPackPath"
+    } else {
+        Write-Verbose "HtmlAgilityPack already loaded: $($htmlAgilityLoaded.Location)"
     }
 }
 catch {
     Write-Error -Message "Failed to initialize PSWimToolkit dependencies: $_"
     throw
 }
+
+$initDuration = ((Get-Date) - $script:ModuleInitStartTime).TotalMilliseconds
+Write-Verbose "PSWimToolkit environment initialized in $([Math]::Round($initDuration, 2))ms"

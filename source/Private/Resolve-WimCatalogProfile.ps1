@@ -13,6 +13,8 @@ function Resolve-WimCatalogProfile {
         [string] $PreferredArchitecture
     )
 
+    Write-ToolkitLog -Message "Resolving catalog profile for WIM: $($WimInfo.Name)" -Type Debug -Source 'Resolve-WimCatalogProfile'
+
     $catalogData = Get-ToolkitCatalogData
     $archSeed = $PreferredArchitecture ?? $WimInfo.Architecture ?? 'x64'
     $archNormalized = switch -Regex ($archSeed.ToString().ToLowerInvariant()) {
@@ -88,11 +90,15 @@ function Resolve-WimCatalogProfile {
         $archNormalized = $selection.Release.Architectures | Select-Object -First 1
     }
 
-    [pscustomobject]@{
+    $result = [pscustomobject]@{
         OperatingSystem = $selection.OperatingSystem.Name
         Release         = $selection.Release.Name
         Query           = $selection.Release.Query
         Architecture    = $archNormalized
         Build           = $buildNumber
     }
+
+    Write-ToolkitLog -Message "Resolved profile: $($result.OperatingSystem) $($result.Release) ($($result.Architecture))" -Type Info -Source 'Resolve-WimCatalogProfile'
+
+    return $result
 }

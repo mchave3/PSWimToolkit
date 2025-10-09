@@ -31,5 +31,6 @@ function Invoke-ParallelProgress {
         else { $calculated }
     }
 
+    Write-ToolkitLog -Message "Progress: $calculatedStatus ($percent%)" -Type Debug -Source 'Invoke-ParallelProgress'
     Write-Progress -Activity $Activity -Status $calculatedStatus -PercentComplete $percent
 }

@@ -8,6 +8,8 @@ function Get-ToolkitCatalogData {
     }
 
     if (-not $script:ToolkitCatalogData) {
+        Write-ToolkitLog -Message "Initializing catalog data..." -Type Debug -Source 'Get-ToolkitCatalogData'
+
         $command = Get-Command -Name Find-WindowsUpdate -Module PSWimToolkit -ErrorAction SilentlyContinue
         $architectures = @('x64', 'x86', 'arm64')
         $operatingSystems = @('Windows 11', 'Windows 10', 'Windows Server')
@@ -83,6 +85,8 @@ function Get-ToolkitCatalogData {
             Architectures    = $architectures
             UpdateTypes      = $updateTypes
         }
+
+        Write-ToolkitLog -Message "Catalog data initialized: $($script:ToolkitCatalogData.OperatingSystems.Count) OS, $($architectures.Count) architectures, $($updateTypes.Count) update types" -Type Info -Source 'Get-ToolkitCatalogData'
     }
 
     return $script:ToolkitCatalogData

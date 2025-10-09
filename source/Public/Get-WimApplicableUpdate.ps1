@@ -20,6 +20,7 @@ function Get-WimApplicableUpdate {
     )
 
     begin {
+        Write-ToolkitLog -Message "=== Starting WIM Applicable Update Detection ===" -Type Stage -Source 'Get-WimApplicableUpdate'
         $resolvedInputs = @()
     }
 
@@ -34,6 +35,8 @@ function Get-WimApplicableUpdate {
     }
 
     end {
+        Write-ToolkitLog -Message "Processing $($resolvedInputs.Count) WIM path(s) for applicable updates" -Type Info -Source 'Get-WimApplicableUpdate'
+
         foreach ($resolved in $resolvedInputs) {
             $wimPath = $resolved.ProviderPath
             $queryIndexes = $Index
@@ -100,5 +103,7 @@ function Get-WimApplicableUpdate {
                 }
             }
         }
+
+        Write-ToolkitLog -Message "=== WIM Applicable Update Detection Complete ===" -Type Success -Source 'Get-WimApplicableUpdate'
     }
 }

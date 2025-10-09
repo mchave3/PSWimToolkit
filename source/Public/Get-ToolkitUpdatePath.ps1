@@ -17,5 +17,10 @@ function Get-ToolkitUpdatePath {
         [switch] $Ensure
     )
 
-    return Resolve-ToolkitUpdatePath -OperatingSystem $OperatingSystem -Release $Release -UpdateType $UpdateType -Ensure:$Ensure.IsPresent
+    Write-ToolkitLog -Message "Getting toolkit update path for $OperatingSystem/$Release/$UpdateType" -Type Debug -Source 'Get-ToolkitUpdatePath'
+
+    $result = Resolve-ToolkitUpdatePath -OperatingSystem $OperatingSystem -Release $Release -UpdateType $UpdateType -Ensure:$Ensure.IsPresent
+
+    Write-ToolkitLog -Message "Toolkit update path: $result" -Type Info -Source 'Get-ToolkitUpdatePath'
+    return $result
 }

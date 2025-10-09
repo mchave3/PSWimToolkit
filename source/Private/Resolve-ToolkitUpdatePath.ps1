@@ -49,6 +49,8 @@ function Resolve-ToolkitUpdatePath {
         [switch] $Ensure
     )
 
+    Write-ToolkitLog -Message "Resolving update path for $OperatingSystem/$Release/$UpdateType" -Type Debug -Source 'Resolve-ToolkitUpdatePath'
+
     $segments = @(
         ConvertTo-ToolkitPathSegment -Value $OperatingSystem -Default 'OS'
         ConvertTo-ToolkitPathSegment -Value $Release -Default 'Release'
@@ -63,8 +65,10 @@ function Resolve-ToolkitUpdatePath {
     if ($Ensure) {
         if (-not (Test-Path -LiteralPath $path -PathType Container)) {
             New-Item -Path $path -ItemType Directory -Force | Out-Null
+            Write-ToolkitLog -Message "Created update directory: $path" -Type Info -Source 'Resolve-ToolkitUpdatePath'
         }
     }
 
+    Write-ToolkitLog -Message "Resolved update path: $path" -Type Debug -Source 'Resolve-ToolkitUpdatePath'
     return $path
 }
