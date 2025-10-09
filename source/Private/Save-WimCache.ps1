@@ -50,7 +50,9 @@ function Save-WimCache {
             Images       = @()
         }
 
-        foreach ($img in $WimImages) {
+        $imagesToPersist = $WimImages | Sort-Object -Property Index
+
+        foreach ($img in $imagesToPersist) {
             $cacheData.Images += [ordered]@{
                 Index        = $img.Index
                 Name         = $img.Name

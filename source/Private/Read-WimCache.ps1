@@ -28,7 +28,7 @@ function Read-WimCache {
         $cache = $cacheContent | ConvertFrom-Json -ErrorAction Stop
 
         $wimImages = @()
-        foreach ($img in $cache.Images) {
+        foreach ($img in ($cache.Images | Sort-Object -Property Index)) {
             $wimImage = [WimImage]::new($cache.WimPath, $img.Index, $true)
             $wimImage.Name = $img.Name
             $wimImage.Description = $img.Description
