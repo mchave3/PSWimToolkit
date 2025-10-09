@@ -154,8 +154,6 @@ function Show-PSWimToolkitMainWindow {
         $controls.UpdatePathTextBox.Text = $state.UpdatesRoot
     }
 
-    Load-WimsFromImport
-
     function Invoke-UiAction {
         param (
             [System.Windows.Threading.Dispatcher] $Dispatcher,
@@ -1334,6 +1332,9 @@ function Show-PSWimToolkitMainWindow {
         }
         Finish-Provisioning -Status 'Stopped'
     }
+
+    # Load any existing WIM files from the import directory
+    Load-WimsFromImport
 
     $controls.ThrottleSlider.Add_ValueChanged({
         param($sender, $args)
