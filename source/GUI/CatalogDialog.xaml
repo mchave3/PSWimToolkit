@@ -1,8 +1,8 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Update Catalog Search"
-        Height="520"
-        Width="860"
+        Height="560"
+        Width="920"
         WindowStartupLocation="CenterOwner"
         Background="#FFFFFF"
         FontFamily="Segoe UI">
@@ -30,9 +30,9 @@
         <Grid Grid.Row="1"
               Margin="0,10,0,6">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -42,7 +42,7 @@
                 <TextBlock Text="Operating system"
                            Margin="0,0,0,4" />
                 <ComboBox x:Name="OperatingSystemComboBox"
-                          Width="180" />
+                          Width="190" />
             </StackPanel>
 
             <StackPanel Grid.Column="1"
@@ -51,7 +51,7 @@
                 <TextBlock Text="Release"
                            Margin="0,0,0,4" />
                 <ComboBox x:Name="ReleaseComboBox"
-                          Width="160" />
+                          Width="170" />
             </StackPanel>
 
             <StackPanel Grid.Column="2"
@@ -60,28 +60,66 @@
                 <TextBlock Text="Architecture"
                            Margin="0,0,0,4" />
                 <ComboBox x:Name="ArchitectureComboBox"
-                          Width="140" />
+                          Width="150" />
             </StackPanel>
 
             <StackPanel Grid.Column="3"
                         Orientation="Vertical">
-                <TextBlock Text="Channel"
+                <TextBlock Text="Update type"
                            Margin="0,0,0,4" />
-                <ComboBox x:Name="ChannelComboBox"
-                          Width="160" />
+                <ComboBox x:Name="UpdateTypeComboBox"
+                          Width="190" />
             </StackPanel>
         </Grid>
 
-        <StackPanel Orientation="Horizontal"
-                    Grid.Row="2"
-                    Margin="0,4,0,10">
+        <WrapPanel Grid.Row="2"
+                   Margin="0,0,0,8">
             <CheckBox x:Name="AllPagesCheckBox"
                       Content="All pages"
-                      Margin="0,0,12,0" />
+                      Margin="0,0,12,6" />
             <CheckBox x:Name="IncludePreviewCheckBox"
-                      Content="Include preview updates"
-                      Margin="0,0,12,0" />
-        </StackPanel>
+                      Content="Include preview"
+                      Margin="0,0,12,6" />
+            <CheckBox x:Name="IncludeDynamicCheckBox"
+                      Content="Include dynamic"
+                      Margin="0,0,12,6" />
+            <CheckBox x:Name="GetFrameworkCheckBox"
+                      Content="Only .NET Framework"
+                      Margin="0,0,12,6" />
+            <CheckBox x:Name="ExcludeFrameworkCheckBox"
+                      Content="Exclude .NET Framework"
+                      Margin="0,0,12,6" />
+            <CheckBox x:Name="StrictCheckBox"
+                      Content="Strict phrase"
+                      Margin="0,0,12,6" />
+            <CheckBox x:Name="IncludeFileNamesCheckBox"
+                      Content="Include filenames"
+                      Margin="0,0,12,6" />
+            <TextBlock Text="Last days:"
+                       VerticalAlignment="Center"
+                       Margin="16,0,4,0" />
+            <TextBox x:Name="LastDaysTextBox"
+                     Width="60"
+                     Margin="0,0,12,0" />
+            <TextBlock Text="Min size:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,4,0" />
+            <TextBox x:Name="MinSizeTextBox"
+                     Width="60"
+                     Margin="0,0,8,0" />
+            <TextBlock Text="Max size:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,4,0" />
+            <TextBox x:Name="MaxSizeTextBox"
+                     Width="60"
+                     Margin="0,0,8,0" />
+            <ComboBox x:Name="SizeUnitComboBox"
+                      Width="80">
+                <ComboBoxItem Content="MB"
+                              IsSelected="True" />
+                <ComboBoxItem Content="GB" />
+            </ComboBox>
+        </WrapPanel>
 
         <ListView x:Name="ResultsList"
                   Grid.Row="3"
@@ -89,16 +127,16 @@
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Title"
-                                    Width="360"
+                                    Width="340"
                                     DisplayMemberBinding="{Binding Title}" />
                     <GridViewColumn Header="Classification"
-                                    Width="140"
+                                    Width="130"
                                     DisplayMemberBinding="{Binding Classification}" />
                     <GridViewColumn Header="Last Updated"
                                     Width="130"
                                     DisplayMemberBinding="{Binding LastUpdated}" />
                     <GridViewColumn Header="Size"
-                                    Width="120"
+                                    Width="90"
                                     DisplayMemberBinding="{Binding Size}" />
                 </GridView>
             </ListView.View>

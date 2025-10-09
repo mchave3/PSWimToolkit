@@ -3,7 +3,7 @@ function Get-ToolkitCatalogFacet {
     [OutputType([object[]])]
     param (
         [Parameter()]
-        [ValidateSet('All', 'OperatingSystems', 'Releases', 'Architectures', 'Channels')]
+        [ValidateSet('All', 'OperatingSystems', 'Releases', 'Architectures', 'UpdateTypes')]
         [string] $Facet = 'All',
 
         [Parameter()]
@@ -17,13 +17,13 @@ function Get-ToolkitCatalogFacet {
 
     switch ($Facet) {
         'OperatingSystems' {
-            return $data.OperatingSystems | Select-Object -Property Name, Channels, Releases
+            return $data.OperatingSystems | Select-Object -Property Name, Releases
         }
         'Architectures' {
             return $data.Architectures
         }
-        'Channels' {
-            return $data.Channels
+        'UpdateTypes' {
+            return $data.UpdateTypes
         }
         'Releases' {
             if ($OperatingSystem) {
@@ -54,7 +54,7 @@ function Get-ToolkitCatalogFacet {
             return [pscustomobject]@{
                 OperatingSystems = $data.OperatingSystems
                 Architectures    = $data.Architectures
-                Channels         = $data.Channels
+                UpdateTypes      = $data.UpdateTypes
             }
         }
     }

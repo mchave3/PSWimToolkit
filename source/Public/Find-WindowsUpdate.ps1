@@ -2,154 +2,348 @@ function Find-WindowsUpdate {
     [CmdletBinding(DefaultParameterSetName = 'Search')]
     [OutputType([CatalogUpdate[]])]
     param (
-        [Parameter(Mandatory = $true, ParameterSetName = 'Search', Position = 0)]
-        [string] $Search,
-
-        [Parameter(Mandatory = $true, ParameterSetName = 'OperatingSystem')]
-        [ValidateSet('Windows 11', 'Windows 10', 'Windows Server')]
-        [string] $OperatingSystem,
-
-        [Parameter(ParameterSetName = 'OperatingSystem')]
-        [string] $Version,
-
         [Parameter()]
-        [ValidateSet('All', 'x64', 'x86', 'ARM64')]
+        [ValidateSet('All', 'x64', 'x86', 'arm64')]
         [string] $Architecture = 'All',
 
         [Parameter()]
+        [switch] $Descending,
+
+        [Parameter()]
+        [switch] $ExcludeFramework,
+
+        [Parameter()]
+        [datetime] $FromDate,
+
+        [Parameter()]
+        [ValidateSet('Default', 'CSV', 'JSON', 'XML')]
+        [string] $Format = 'Default',
+
+        [Parameter()]
+        [switch] $GetFramework,
+
+        [Parameter()]
+        [switch] $AllPages,
+
+        [Parameter()]
+        [switch] $IncludeDynamic,
+
+        [Parameter()]
+        [switch] $IncludeFileNames,
+
+        [Parameter()]
+        [switch] $IncludePreview,
+
+        [Parameter()]
+        [int] $LastDays,
+
+        [Parameter()]
+        [double] $MaxSize,
+
+        [Parameter()]
+        [double] $MinSize,
+
+        [Parameter(Mandatory, ParameterSetName = 'OperatingSystem')]
+        [ValidateSet('Windows 11', 'Windows 10', 'Windows Server')]
+        [string] $OperatingSystem,
+
+        [Parameter()]
+        [string[]] $Properties,
+
+        [Parameter(Mandatory, ParameterSetName = 'Search', Position = 0)]
+        [string] $Search,
+
+        [Parameter()]
+        [ValidateSet('MB', 'GB')]
+        [string] $SizeUnit = 'MB',
+
+        [Parameter()]
+        [ValidateSet('Date', 'Size', 'Title', 'Classification', 'Product')]
+        [string] $SortBy = 'Date',
+
+        [Parameter()]
+        [switch] $Strict,
+
+        [Parameter()]
+        [datetime] $ToDate,
+
+        [Parameter()]
         [ValidateSet(
-            'Cumulative',
-            'Security',
-            'Critical',
-            'Feature',
-            'Service Pack',
+            'Security Updates',
+            'Updates',
+            'Critical Updates',
+            'Feature Packs',
+            'Service Packs',
             'Tools',
-            'Update Rollup',
-            'Driver',
-            'Security Quality'
+            'Update Rollups',
+            'Cumulative Updates',
+            'Security Quality Updates',
+            'Driver Updates'
         )]
         [string[]] $UpdateType,
 
-        [switch] $AllPages,
-        [switch] $IncludePreview,
-        [switch] $ExcludeFramework,
-        [switch] $IncludeFileNames
+        [Parameter(ParameterSetName = 'OperatingSystem')]
+        [string] $Version
     )
 
     begin {
-        $searchQuery = switch ($PSCmdlet.ParameterSetName) {
+        if (-not ('CatalogUpdate' -as [type])) {
+            $classPath = Join-Path -Path $PSScriptRoot -ChildPath '..\Classes\CatalogUpdate.ps1'
+            if (Test-Path -LiteralPath $classPath -PathType Leaf) {
+                . $classPath
+            } else {
+                throw "CatalogUpdate class file not found at: $classPath"
+            }
+        }
+
+        $globalUpdates = @()
+        $searchContext = switch ($PSCmdlet.ParameterSetName) {
             'OperatingSystem' {
-                $parts = @()
-                $parts += $OperatingSystem
+                $parts = @($OperatingSystem)
                 if ($Version) { $parts += $Version }
-                if ($Architecture -ne 'All') { $parts += "$Architecture-based" }
+                if ($Architecture -and $Architecture -ne 'All') { $parts += "$Architecture-based" }
                 if ($UpdateType) { $parts += $UpdateType }
                 $parts -join ' '
             }
             default { $Search }
         }
 
-        if (-not $searchQuery) {
-            throw [System.ArgumentException]::new('A search query must be specified.')
+        if (-not $searchContext) {
+            throw [System.ArgumentException]::new('A search term or operating system must be supplied.')
         }
 
-        Write-ToolkitLog -Message "Catalog search starting for '$searchQuery'." -Type Stage -Source 'Find-WindowsUpdate'
-        $encodedQuery = [uri]::EscapeDataString($searchQuery)
-        $baseUri = "https://www.catalog.update.microsoft.com/Search.aspx?q=$encodedQuery"
-        $responses = @()
-
-        try {
-            $response = Invoke-CatalogRequest -Uri $baseUri
-            if ($null -eq $response) {
-                Write-ToolkitLog -Message "No updates returned for '$searchQuery'." -Type Info -Source 'Find-WindowsUpdate'
-                return
-            }
-
-            $responses += $response
-
-            if ($AllPages) {
-                $pageNumber = 1
-                while ($response.HasNextPage() -and $pageNumber -lt 40) {
-                    $pagedUri = "$baseUri&p=$pageNumber"
-                    $response = Invoke-CatalogRequest -Uri $pagedUri
-                    if ($response) {
-                        $responses += $response
-                    } else {
-                        break
-                    }
-                    $pageNumber++
-                }
-            }
-        } catch {
-            Write-ToolkitLog -Message "Catalog search failed for '$searchQuery'. $($_.Exception.Message)" -Type Error -Source 'Find-WindowsUpdate'
-            throw
+        $encodedSearch = if ($Strict) {
+            [uri]::EscapeDataString('"' + $searchContext + '"')
+        } elseif ($GetFramework) {
+            [uri]::EscapeDataString("*$searchContext*")
+        } else {
+            [uri]::EscapeDataString($searchContext)
         }
 
-        $rows = $responses | ForEach-Object { $_.GetRows() }
-        if (-not $rows) {
-            Write-ToolkitLog -Message "No rows located for '$searchQuery'." -Type Info -Source 'Find-WindowsUpdate'
+        $baseUri = "https://www.catalog.update.microsoft.com/Search.aspx?q=$encodedSearch"
+        Write-ToolkitLog -Message "Submitting catalog query '$searchContext'." -Type Stage -Source 'Find-WindowsUpdate'
+    }
+
+    process {
+        $response = Invoke-CatalogRequest -Uri $baseUri
+        if (-not $response) {
+            Write-ToolkitLog -Message "Catalog returned no data for '$searchContext'." -Type Info -Source 'Find-WindowsUpdate'
             return
         }
 
-        $updates = foreach ($row in $rows) {
+        $rows = @()
+        if ($response.Rows) { $rows += $response.Rows }
+
+        if ($AllPages) {
+            $pageCount = 0
+            while ($response.HasNextPage() -and $pageCount -lt 39) {
+                $pageCount++
+                $pageUri = "$baseUri&p=$pageCount"
+                $response = Invoke-CatalogRequest -Uri $pageUri
+                if (-not $response) { break }
+                if ($response.Rows) { $rows += $response.Rows }
+            }
+        }
+
+        if (-not $rows -or $rows.Count -eq 0) {
+            Write-ToolkitLog -Message "No catalog rows discovered for '$searchContext'." -Type Info -Source 'Find-WindowsUpdate'
+            return
+        }
+
+        $filteredRows = @()
+        foreach ($row in $rows) {
+            $cells = $row.SelectNodes('td')
+            if (-not $cells -or $cells.Count -lt 8) { continue }
+
+            $title = $cells[1].InnerText.Trim()
+            $classification = $cells[3].InnerText.Trim()
+
+            $include = $true
+            if (-not $IncludeDynamic -and $title -like '*Dynamic*') { $include = $false }
+            if (-not $IncludePreview -and $title -like '*Preview*') { $include = $false }
+
+            if ($GetFramework -and $title -notlike '*Framework*') { $include = $false }
+            if ($ExcludeFramework -and $title -like '*Framework*') { $include = $false }
+
+            if ($PSCmdlet.ParameterSetName -eq 'OperatingSystem') {
+                if ($OperatingSystem -eq 'Windows Server') {
+                    if (($title -notlike '*Microsoft*Server*') -and ($title -notlike '*Server Operating System*')) {
+                        $include = $false
+                    }
+                } elseif ($title -notlike "*$OperatingSystem*") {
+                    $include = $false
+                }
+
+                if ($Version -and $title -notlike "*$Version*") {
+                    $include = $false
+                }
+            }
+
+            if ($include -and $UpdateType -and $UpdateType.Count -gt 0) {
+                $matched = $false
+                foreach ($type in $UpdateType) {
+                    switch ($type) {
+                        'Security Updates' {
+                            if ($classification -eq 'Security Updates') { $matched = $true }
+                        }
+                        'Cumulative Updates' {
+                            if ($title -like '*Cumulative Update*') { $matched = $true }
+                        }
+                        'Critical Updates' {
+                            if ($classification -eq 'Critical Updates') { $matched = $true }
+                        }
+                        'Updates' {
+                            if ($classification -eq 'Updates') { $matched = $true }
+                        }
+                        'Feature Packs' {
+                            if ($classification -eq 'Feature Packs') { $matched = $true }
+                        }
+                        'Service Packs' {
+                            if ($classification -eq 'Service Packs') { $matched = $true }
+                        }
+                        'Tools' {
+                            if ($classification -eq 'Tools') { $matched = $true }
+                        }
+                        'Update Rollups' {
+                            if ($classification -eq 'Update Rollups') { $matched = $true }
+                        }
+                        'Security Quality Updates' {
+                            if ($classification -eq 'Security Updates' -and $title -like '*Quality*') { $matched = $true }
+                        }
+                        'Driver Updates' {
+                            if ($title -like '*Driver*') { $matched = $true }
+                        }
+                        default {
+                            if ($title -like "*$type*") { $matched = $true }
+                        }
+                    }
+                    if ($matched) { break }
+                }
+                if (-not $matched) { $include = $false }
+            }
+
+            if ($include) { $filteredRows += $row }
+        }
+
+        if ($Architecture -and $Architecture -ne 'All') {
+            $architectureValue = $Architecture.ToLowerInvariant()
+            $architectureRows = @()
+            foreach ($row in $filteredRows) {
+                $cells = $row.SelectNodes('td')
+                if (-not $cells -or $cells.Count -lt 2) { continue }
+                $title = $cells[1].InnerText.Trim()
+                $match = switch ($architectureValue) {
+                    'x64' { ($title -match 'x64|64.?bit|64.?based') -and ($title -notmatch 'x86|32.?bit|arm64') }
+                    'x86' { ($title -match 'x86|32.?bit|32.?based') -and ($title -notmatch '64.?bit|arm64') }
+                    'arm64' { $title -match 'arm64|arm.?based' }
+                    default { $true }
+                }
+                if ($match) { $architectureRows += $row }
+            }
+            $filteredRows = $architectureRows
+        }
+
+        $updates = @()
+        foreach ($row in $filteredRows) {
             try {
-                [CatalogUpdate]::new($row, $IncludeFileNames.IsPresent)
+                $updates += [CatalogUpdate]::new($row, $IncludeFileNames.IsPresent)
             } catch {
-                Write-ToolkitLog -Message "Failed to parse catalog row. $($_.Exception.Message)" -Type Warning -Source 'Find-WindowsUpdate'
+                Write-ToolkitLog -Message "Failed to parse catalog row: $($_.Exception.Message)" -Type Warning -Source 'Find-WindowsUpdate'
             }
         }
 
         $updates = $updates | Where-Object { $_ }
 
-        if ($PSCmdlet.ParameterSetName -eq 'OperatingSystem') {
+        if ($FromDate) {
+            $updates = $updates | Where-Object { $_.LastUpdated -ge $FromDate }
+        }
+        if ($ToDate) {
+            $updates = $updates | Where-Object { $_.LastUpdated -le $ToDate }
+        }
+        if ($LastDays) {
+            $cutoff = (Get-Date).AddDays(-1 * [math]::Abs($LastDays))
+            $updates = $updates | Where-Object { $_.LastUpdated -ge $cutoff }
+        }
+
+        if ($MinSize -or $MaxSize) {
+            $sizeMultiplier = if ($SizeUnit -eq 'GB') { 1024 } else { 1 }
             $updates = $updates | Where-Object {
-                $_.Products -like "*$OperatingSystem*" -and
-                (-not $Version -or $_.Title -like "*$Version*" -or $_.Products -like "*$Version*")
+                $sizeInMb = ConvertTo-ToolkitSizeInMb $_.Size
+                $meetsMin = (-not $MinSize) -or ($sizeInMb -ge ($MinSize * $sizeMultiplier))
+                $meetsMax = (-not $MaxSize) -or ($sizeInMb -le ($MaxSize * $sizeMultiplier))
+                $meetsMin -and $meetsMax
             }
         }
 
-        if ($Architecture -ne 'All') {
-            $updates = $updates | Where-Object {
-                switch ($Architecture.ToLowerInvariant()) {
-                    'x64' { $_.Title -match '(?i)x64|64-?bit|64-?based' -and $_.Title -notmatch '(?i)x86|32-?bit|arm64' }
-                    'x86' { $_.Title -match '(?i)x86|32-?bit|32-?based' -and $_.Title -notmatch '(?i)x64|64-?bit|arm64' }
-                    'arm64' { $_.Title -match '(?i)arm64|arm-?based' }
-                }
-            }
+        switch ($SortBy) {
+            'Date' { $updates = $updates | Sort-Object LastUpdated -Descending:$Descending.IsPresent }
+            'Size' { $updates = $updates | Sort-Object { ConvertTo-ToolkitSizeInMb $_.Size } -Descending:$Descending.IsPresent }
+            'Title' { $updates = $updates | Sort-Object Title -Descending:$Descending.IsPresent }
+            'Classification' { $updates = $updates | Sort-Object Classification -Descending:$Descending.IsPresent }
+            'Product' { $updates = $updates | Sort-Object Products -Descending:$Descending.IsPresent }
         }
 
-        if ($UpdateType) {
-            $updates = $updates | Where-Object {
-                $classification = $_.Classification
-                $title = $_.Title
-                $match = $false
-                foreach ($type in $UpdateType) {
-                    switch ($type) {
-                        'Cumulative' { if ($classification -like '*Cumulative*' -or $title -like '*Cumulative*') { $match = $true } }
-                        'Security' { if ($classification -like '*Security*') { $match = $true } }
-                        'Critical' { if ($classification -like '*Critical*') { $match = $true } }
-                        'Feature' { if ($classification -like '*Feature*') { $match = $true } }
-                        'Service Pack' { if ($classification -like '*Service Pack*') { $match = $true } }
-                        'Tools' { if ($classification -like '*Tools*') { $match = $true } }
-                        'Update Rollup' { if ($classification -like '*Rollup*') { $match = $true } }
-                        'Driver' { if ($classification -like '*Driver*' -or $title -like '*Driver*') { $match = $true } }
-                        'Security Quality' { if ($classification -like '*Security Quality*') { $match = $true } }
-                    }
-                }
-                $match
-            }
-        }
-
-        if (-not $IncludePreview) {
-            $updates = $updates | Where-Object { $_.Title -notlike '*Preview*' }
-        }
-
-        if ($ExcludeFramework) {
-            $updates = $updates | Where-Object { $_.Title -notlike '*Framework*' }
-        }
-
-        $updates = $updates | Sort-Object LastUpdated -Descending
-        Write-ToolkitLog -Message ("Catalog search '{0}' returned {1} update(s)." -f $searchQuery, $updates.Count) -Type Success -Source 'Find-WindowsUpdate'
-        $updates
+        $globalUpdates += $updates
     }
+
+    end {
+        $globalUpdates = @($globalUpdates | Sort-Object LastUpdated -Descending)
+        $count = $globalUpdates.Count
+        Write-ToolkitLog -Message ("Catalog search '{0}' produced {1} matching update(s)." -f $searchContext, $count) -Type Success -Source 'Find-WindowsUpdate'
+
+        switch ($Format) {
+            'CSV' {
+                if ($Properties) {
+                    $globalUpdates | Select-Object $Properties | ConvertTo-Csv -NoTypeInformation
+                } else {
+                    $globalUpdates | ConvertTo-Csv -NoTypeInformation
+                }
+            }
+            'JSON' {
+                if ($Properties) {
+                    $globalUpdates | Select-Object $Properties | ConvertTo-Json -Depth 6
+                } else {
+                    $globalUpdates | ConvertTo-Json -Depth 6
+                }
+            }
+            'XML' {
+                if ($Properties) {
+                    $globalUpdates | Select-Object $Properties | ConvertTo-Xml -As String -Depth 6
+                } else {
+                    $globalUpdates | ConvertTo-Xml -As String -Depth 6
+                }
+            }
+            default {
+                if ($Properties) {
+                    $globalUpdates | Select-Object $Properties
+                } else {
+                    $globalUpdates
+                }
+            }
+        }
+    }
+}
+
+function ConvertTo-ToolkitSizeInMb {
+    param (
+        [Parameter(Mandatory)]
+        [string] $SizeString
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SizeString)) {
+        return 0
+    }
+
+    $normalized = $SizeString.Trim()
+    if ($normalized -match '([\d\.,]+)\s*(KB|MB|GB)') {
+        $numericValue = $matches[1].Replace(',', '')
+        $value = [double]::Parse($numericValue, [System.Globalization.CultureInfo]::InvariantCulture)
+        switch ($matches[2].ToUpperInvariant()) {
+            'KB' { return $value / 1024 }
+            'GB' { return $value * 1024 }
+            default { return $value }
+        }
+    }
+
+    return 0
 }

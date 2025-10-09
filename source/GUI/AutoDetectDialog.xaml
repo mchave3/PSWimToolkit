@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -41,8 +42,21 @@
                     Content="Browse..." />
         </Grid>
 
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,8">
+            <TextBlock Text="Update type:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0" />
+            <ComboBox x:Name="AutoDetectUpdateTypeComboBox"
+                      Width="220" />
+            <CheckBox x:Name="AutoDetectIncludePreviewCheckBox"
+                      Content="Include preview updates"
+                      Margin="16,0,0,0" />
+        </StackPanel>
+
         <ListView x:Name="AutoDetectResults"
-                  Grid.Row="2"
+                  Grid.Row="3"
                   SelectionMode="Extended">
             <ListView.View>
                 <GridView>
@@ -68,7 +82,7 @@
             </ListView.View>
         </ListView>
 
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="4"
               Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

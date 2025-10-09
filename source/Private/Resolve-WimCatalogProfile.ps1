@@ -10,19 +10,18 @@ function Resolve-WimCatalogProfile {
         [string] $PreferredRelease,
 
         [Parameter()]
-        [string] $PreferredChannel
+        [string] $PreferredArchitecture
     )
 
     $catalogData = Get-ToolkitCatalogData
-    $archValue = ($WimInfo.Architecture ?? 'x64')
-    $archNormalized = switch -Regex ($archValue.ToString().ToLowerInvariant()) {
-        'amd64' { 'x64'; break }
-        'x64'   { 'x64'; break }
-        '64'    { 'x64'; break }
-        'arm64' { 'ARM64'; break }
-        'aarch64' { 'ARM64'; break }
-        'x86'   { 'x86'; break }
-        '86'    { 'x86'; break }
+    $archSeed = $PreferredArchitecture ?? $WimInfo.Architecture ?? 'x64'
+    $archNormalized = switch -Regex ($archSeed.ToString().ToLowerInvariant()) {
+        'amd64' { 'x64' }
+        'x64'   { 'x64' }
+        'arm64' { 'arm64' }
+        'aarch64' { 'arm64' }
+        'x86'   { 'x86' }
+        '86'    { 'x86' }
         default { 'x64' }
     }
 
@@ -31,26 +30,27 @@ function Resolve-WimCatalogProfile {
         $buildNumber = $WimInfo.Version.Build
     }
 
-    $nameString = $WimInfo.Name ?? ''
-    $descriptionString = $WimInfo.Description ?? ''
-    $combinedLabel = "$nameString $descriptionString"
+    $label = @($WimInfo.Name, $WimInfo.Description) -join ' '
 
-    $matchCandidates = foreach ($os in $catalogData.OperatingSystems) {
+    $candidates = @()
+    foreach ($os in $catalogData.OperatingSystems) {
         foreach ($release in $os.Releases) {
             $buildMatch = $false
-            if ($null -ne $buildNumber) {
+            if ($buildNumber) {
                 if ($release.BuildMax) {
-                    if (($buildNumber -ge $release.BuildMin) -and ($buildNumber -le $release.BuildMax)) {
-                        $buildMatch = $true
-                    }
-                } elseif ($buildNumber -ge $release.BuildMin) {
-                    $buildMatch = $true
+                    $buildMatch = ($buildNumber -ge $release.BuildMin) -and ($buildNumber -le $release.BuildMax)
+                } else {
+                    $buildMatch = $buildNumber -ge $release.BuildMin
                 }
             }
 
-            $labelMatch = $combinedLabel -like "*$($os.Name)*" -or $combinedLabel -like "*$($release.Name)*"
+            $labelMatch = $false
+            if (-not $labelMatch -and $label) {
+                $labelMatch = ($label -like "*$($os.Name)*") -or ($label -like "*$($release.Name)*")
+            }
+
             if ($buildMatch -or $labelMatch) {
-                [pscustomobject]@{
+                $candidates += [pscustomobject]@{
                     OperatingSystem = $os
                     Release         = $release
                 }
@@ -58,49 +58,41 @@ function Resolve-WimCatalogProfile {
         }
     }
 
-    $selected = $null
+    $selection = $null
     if ($PreferredRelease) {
-        $selected = $matchCandidates | Where-Object { $_.Release.Name -eq $PreferredRelease } | Select-Object -First 1
+        $selection = $candidates | Where-Object { $_.Release.Name -eq $PreferredRelease } | Select-Object -First 1
     }
 
-    if (-not $selected) {
-        $selected = $matchCandidates | Select-Object -First 1
+    if (-not $selection) {
+        $selection = $candidates | Select-Object -First 1
     }
 
-    if (-not $selected) {
-        if ($combinedLabel -match '(?i)server') {
-            $fallbackOs = $catalogData.OperatingSystems | Where-Object { $_.Name -eq 'Windows Server' } | Select-Object -First 1
+    if (-not $selection) {
+        $fallbackName = if ($label -match '(?i)server') {
+            'Windows Server'
         } elseif ($buildNumber -and $buildNumber -ge 22000) {
-            $fallbackOs = $catalogData.OperatingSystems | Where-Object { $_.Name -eq 'Windows 11' } | Select-Object -First 1
+            'Windows 11'
         } else {
-            $fallbackOs = $catalogData.OperatingSystems | Where-Object { $_.Name -eq 'Windows 10' } | Select-Object -First 1
+            'Windows 10'
         }
 
+        $fallbackOs = $catalogData.OperatingSystems | Where-Object { $_.Name -eq $fallbackName } | Select-Object -First 1
         $fallbackRelease = $fallbackOs.Releases | Sort-Object -Property BuildMin -Descending | Select-Object -First 1
-        $selected = [pscustomobject]@{
+        $selection = [pscustomobject]@{
             OperatingSystem = $fallbackOs
             Release         = $fallbackRelease
         }
     }
 
-    $channel = if ($PreferredChannel) {
-        $PreferredChannel
-    } elseif ($selected.OperatingSystem.Channels -contains 'General Availability') {
-        'General Availability'
-    } else {
-        $selected.OperatingSystem.Channels | Select-Object -First 1
+    if ($selection.Release.Architectures -and ($selection.Release.Architectures -notcontains $archNormalized)) {
+        $archNormalized = $selection.Release.Architectures | Select-Object -First 1
     }
 
-    if ($selected.Release.Architectures -notcontains $archNormalized) {
-        $archNormalized = $selected.Release.Architectures | Select-Object -First 1
-    }
-
-    return [pscustomobject]@{
-        OperatingSystem = $selected.OperatingSystem.Name
-        Release         = $selected.Release.Name
-        Query           = $selected.Release.Query
+    [pscustomobject]@{
+        OperatingSystem = $selection.OperatingSystem.Name
+        Release         = $selection.Release.Name
+        Query           = $selection.Release.Query
         Architecture    = $archNormalized
-        Channel         = $channel
         Build           = $buildNumber
     }
 }

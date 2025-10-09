@@ -456,19 +456,28 @@ function Show-PSWimToolkitMainWindow {
         $dialog.Owner = $window
 
         $catalogControls = @{
-            SearchTextBox          = $dialog.FindName('SearchTextBox')
-            SearchButton           = $dialog.FindName('SearchButton')
+            SearchTextBox           = $dialog.FindName('SearchTextBox')
+            SearchButton            = $dialog.FindName('SearchButton')
             OperatingSystemComboBox = $dialog.FindName('OperatingSystemComboBox')
-            ReleaseComboBox        = $dialog.FindName('ReleaseComboBox')
-            ArchitectureComboBox   = $dialog.FindName('ArchitectureComboBox')
-            ChannelComboBox        = $dialog.FindName('ChannelComboBox')
-            AllPagesCheckBox       = $dialog.FindName('AllPagesCheckBox')
-            IncludePreviewCheckBox = $dialog.FindName('IncludePreviewCheckBox')
-            ResultsList            = $dialog.FindName('ResultsList')
-            DownloadButton         = $dialog.FindName('DownloadButton')
-            CopyButton             = $dialog.FindName('CopyButton')
-            CloseButton            = $dialog.FindName('CloseButton')
-            StatusText             = $dialog.FindName('CatalogStatusText')
+            ReleaseComboBox         = $dialog.FindName('ReleaseComboBox')
+            ArchitectureComboBox    = $dialog.FindName('ArchitectureComboBox')
+            UpdateTypeComboBox      = $dialog.FindName('UpdateTypeComboBox')
+            AllPagesCheckBox        = $dialog.FindName('AllPagesCheckBox')
+            IncludePreviewCheckBox  = $dialog.FindName('IncludePreviewCheckBox')
+            IncludeDynamicCheckBox  = $dialog.FindName('IncludeDynamicCheckBox')
+            GetFrameworkCheckBox    = $dialog.FindName('GetFrameworkCheckBox')
+            ExcludeFrameworkCheckBox = $dialog.FindName('ExcludeFrameworkCheckBox')
+            StrictCheckBox          = $dialog.FindName('StrictCheckBox')
+            IncludeFileNamesCheckBox = $dialog.FindName('IncludeFileNamesCheckBox')
+            LastDaysTextBox         = $dialog.FindName('LastDaysTextBox')
+            MinSizeTextBox          = $dialog.FindName('MinSizeTextBox')
+            MaxSizeTextBox          = $dialog.FindName('MaxSizeTextBox')
+            SizeUnitComboBox        = $dialog.FindName('SizeUnitComboBox')
+            ResultsList             = $dialog.FindName('ResultsList')
+            DownloadButton          = $dialog.FindName('DownloadButton')
+            CopyButton              = $dialog.FindName('CopyButton')
+            CloseButton             = $dialog.FindName('CloseButton')
+            StatusText              = $dialog.FindName('CatalogStatusText')
         }
 
         foreach ($key in $catalogControls.Keys) {
@@ -478,14 +487,14 @@ function Show-PSWimToolkitMainWindow {
         }
 
         if (-not $state.CatalogFacets) {
-            $state.CatalogFacets = Get-ToolkitCatalogFacet
+            $state.CatalogFacets = Get-ToolkitCatalogData
         }
 
         $catalogControls.IncludePreviewCheckBox.IsChecked = $controls.IncludePreviewCheckBox.IsChecked
 
         $operatingSystems = $state.CatalogFacets.OperatingSystems
         $architectures = @('All') + $state.CatalogFacets.Architectures
-        $channels = $state.CatalogFacets.Channels
+        $updateTypes = @('Any') + $state.CatalogFacets.UpdateTypes
 
         $catalogControls.OperatingSystemComboBox.Items.Clear()
         foreach ($os in $operatingSystems) {
@@ -498,11 +507,15 @@ function Show-PSWimToolkitMainWindow {
         }
         $catalogControls.ArchitectureComboBox.SelectedIndex = 0
 
-        $catalogControls.ChannelComboBox.Items.Clear()
-        foreach ($channel in $channels) {
-            $null = $catalogControls.ChannelComboBox.Items.Add($channel)
+        $catalogControls.UpdateTypeComboBox.Items.Clear()
+        foreach ($type in $updateTypes) {
+            $null = $catalogControls.UpdateTypeComboBox.Items.Add($type)
         }
-        $catalogControls.ChannelComboBox.SelectedIndex = 0
+        $catalogControls.UpdateTypeComboBox.SelectedIndex = 0
+
+        if ($catalogControls.SizeUnitComboBox) {
+            $catalogControls.SizeUnitComboBox.SelectedIndex = 0
+        }
 
         function Set-ReleaseOptions {
             param (
@@ -546,49 +559,73 @@ function Show-PSWimToolkitMainWindow {
         }
 
         $catalogControls.SearchButton.Add_Click({
+            $params = @{}
             $query = $catalogControls.SearchTextBox.Text
             $selectedOs = [string]$catalogControls.OperatingSystemComboBox.SelectedItem
             $selectedRelease = [string]$catalogControls.ReleaseComboBox.SelectedItem
             $selectedArch = [string]$catalogControls.ArchitectureComboBox.SelectedItem
-            if (-not $selectedArch) { $selectedArch = 'All' }
-            $selectedChannel = [string]$catalogControls.ChannelComboBox.SelectedItem
-            if (-not $selectedChannel) { $selectedChannel = 'General Availability' }
+            $selectedUpdateType = [string]$catalogControls.UpdateTypeComboBox.SelectedItem
 
-            $includePreview = [bool]$catalogControls.IncludePreviewCheckBox.IsChecked
-            $allPages = [bool]$catalogControls.AllPagesCheckBox.IsChecked
-            $useFacet = -not [string]::IsNullOrWhiteSpace($selectedOs) -and -not [string]::IsNullOrWhiteSpace($selectedRelease)
-
-            if (-not $useFacet -and [string]::IsNullOrWhiteSpace($query)) {
-                Set-CatalogStatus -Message 'Provide a search term or select an operating system and release.'
+            if (-not [string]::IsNullOrWhiteSpace($selectedOs)) {
+                $params['OperatingSystem'] = $selectedOs
+                if (-not [string]::IsNullOrWhiteSpace($selectedRelease)) {
+                    $params['Version'] = $selectedRelease
+                }
+            } elseif ([string]::IsNullOrWhiteSpace($query)) {
+                Set-CatalogStatus -Message 'Provide a search term or select an operating system.'
                 return
+            } else {
+                $params['Search'] = $query
+            }
+
+            if ($selectedArch -and $selectedArch -ne 'All') {
+                $params['Architecture'] = $selectedArch
+            }
+
+            if ($selectedUpdateType -and $selectedUpdateType -ne 'Any') {
+                $params['UpdateType'] = @($selectedUpdateType)
+            }
+
+            if ($catalogControls.IncludePreviewCheckBox.IsChecked) { $params['IncludePreview'] = $true }
+            if ($catalogControls.IncludeDynamicCheckBox.IsChecked) { $params['IncludeDynamic'] = $true }
+            if ($catalogControls.GetFrameworkCheckBox.IsChecked) { $params['GetFramework'] = $true }
+            if ($catalogControls.ExcludeFrameworkCheckBox.IsChecked) { $params['ExcludeFramework'] = $true }
+            if ($catalogControls.StrictCheckBox.IsChecked) { $params['Strict'] = $true }
+            if ($catalogControls.IncludeFileNamesCheckBox.IsChecked) { $params['IncludeFileNames'] = $true }
+            if ($catalogControls.AllPagesCheckBox.IsChecked) { $params['AllPages'] = $true }
+
+            $lastDaysValue = $catalogControls.LastDaysTextBox.Text
+            if (-not [string]::IsNullOrWhiteSpace($lastDaysValue) -and [int]::TryParse($lastDaysValue, [ref]([int]$null))) {
+                $params['LastDays'] = [int]$lastDaysValue
+            }
+
+            $minSize = $catalogControls.MinSizeTextBox.Text
+            if (-not [string]::IsNullOrWhiteSpace($minSize) -and [double]::TryParse($minSize, [ref]([double]$null))) {
+                $params['MinSize'] = [double]$minSize
+            }
+
+            $maxSize = $catalogControls.MaxSizeTextBox.Text
+            if (-not [string]::IsNullOrWhiteSpace($maxSize) -and [double]::TryParse($maxSize, [ref]([double]$null))) {
+                $params['MaxSize'] = [double]$maxSize
+            }
+
+            $sizeUnitItem = $catalogControls.SizeUnitComboBox.SelectedItem
+            if ($sizeUnitItem -and $sizeUnitItem.Content) {
+                $params['SizeUnit'] = $sizeUnitItem.Content.ToString()
+            }
+
+            $descriptor = if ($params.ContainsKey('OperatingSystem')) {
+                "{0} {1}" -f $params['OperatingSystem'], ($params['Version'] ?? '')
+            } else {
+                $params['Search']
             }
 
             $catalogControls.SearchButton.IsEnabled = $false
             $resultItems.Clear()
-            $descriptor = if ($useFacet) {
-                "{0} {1} ({2})" -f $selectedOs, $selectedRelease, $selectedArch
-            } else {
-                "'$query'"
-            }
-            Set-CatalogStatus -Message "Searching catalog for $descriptor..."
+            Set-CatalogStatus -Message ("Searching catalog for {0}..." -f $descriptor)
 
             try {
-                if ($useFacet) {
-                    $found = Find-WindowsUpdate -OperatingSystem $selectedOs -Version $selectedRelease -Architecture $selectedArch -IncludePreview:$includePreview -AllPages:$allPages -ErrorAction Stop
-                    if (-not [string]::IsNullOrWhiteSpace($query)) {
-                        $pattern = [regex]::Escape($query)
-                        $found = $found | Where-Object { $_.Title -match $pattern -or $_.Products -match $pattern }
-                    }
-                } else {
-                    $found = Find-WindowsUpdate -Search $query -IncludePreview:$includePreview -AllPages:$allPages -ErrorAction Stop
-                }
-
-                if ($selectedChannel -eq 'Preview') {
-                    $found = $found | Where-Object { $_.Title -match '(?i)preview' -or $_.Classification -match '(?i)preview' }
-                } elseif ($selectedChannel -eq 'Security Only') {
-                    $found = $found | Where-Object { $_.Classification -match '(?i)security' -or $_.Title -match '(?i)security' }
-                }
-
+                $found = Find-WindowsUpdate @params
                 foreach ($update in $found) {
                     $resultItems.Add($update) | Out-Null
                 }
@@ -596,7 +633,7 @@ function Show-PSWimToolkitMainWindow {
                 if ($resultItems.Count -eq 0) {
                     Set-CatalogStatus -Message 'No updates found for the specified criteria.'
                 } else {
-                    Set-CatalogStatus -Message "Found $($resultItems.Count) update(s)."
+                    Set-CatalogStatus -Message ("Found {0} update(s)." -f $resultItems.Count)
                 }
             } catch {
                 $errorBrush = New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromRgb(0xD1,0x34,0x38))
@@ -628,8 +665,8 @@ function Show-PSWimToolkitMainWindow {
 
             try {
                 Set-CatalogStatus -Message 'Downloading selected updates...'
-                Save-WindowsUpdate -InputObject $selected -Destination $destination -DownloadAll:$true -ErrorAction Stop | Out-Null
-                Set-CatalogStatus -Message "Downloaded $($selected.Count) update(s) to $destination."
+                Save-WindowsUpdate -InputObject $selected -Destination $destination -DownloadAll:$true -Force:$true -ErrorAction Stop | Out-Null
+                Set-CatalogStatus -Message ("Downloaded {0} update(s) to {1}." -f $selected.Count, $destination)
                 $controls.UpdatePathTextBox.Text = $destination
             } catch {
                 $errorBrush = New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromRgb(0xD1,0x34,0x38))
@@ -685,13 +722,15 @@ function Show-PSWimToolkitMainWindow {
         $dialog.Owner = $window
 
         $detectControls = @{
-            DownloadPathTextBox       = $dialog.FindName('DownloadPathTextBox')
-            BrowseDownloadPathButton  = $dialog.FindName('BrowseDownloadPathButton')
-            AutoDetectResults         = $dialog.FindName('AutoDetectResults')
-            QueueDownloadButton       = $dialog.FindName('QueueDownloadButton')
-            CopyUpdatesButton         = $dialog.FindName('CopyUpdatesButton')
-            CloseButton               = $dialog.FindName('CloseButton')
-            StatusText                = $dialog.FindName('AutoDetectStatusText')
+            DownloadPathTextBox             = $dialog.FindName('DownloadPathTextBox')
+            BrowseDownloadPathButton        = $dialog.FindName('BrowseDownloadPathButton')
+            AutoDetectUpdateTypeComboBox    = $dialog.FindName('AutoDetectUpdateTypeComboBox')
+            AutoDetectIncludePreviewCheckBox = $dialog.FindName('AutoDetectIncludePreviewCheckBox')
+            AutoDetectResults               = $dialog.FindName('AutoDetectResults')
+            QueueDownloadButton             = $dialog.FindName('QueueDownloadButton')
+            CopyUpdatesButton               = $dialog.FindName('CopyUpdatesButton')
+            CloseButton                     = $dialog.FindName('CloseButton')
+            StatusText                      = $dialog.FindName('AutoDetectStatusText')
         }
 
         foreach ($key in $detectControls.Keys) {
@@ -700,6 +739,18 @@ function Show-PSWimToolkitMainWindow {
             }
         }
 
+        if (-not $state.CatalogFacets) {
+            $state.CatalogFacets = Get-ToolkitCatalogData
+        }
+
+        $detectControls.AutoDetectUpdateTypeComboBox.Items.Clear()
+        foreach ($type in @('Cumulative Updates') + $state.CatalogFacets.UpdateTypes) {
+            if (-not $detectControls.AutoDetectUpdateTypeComboBox.Items.Contains($type)) {
+                $null = $detectControls.AutoDetectUpdateTypeComboBox.Items.Add($type)
+            }
+        }
+        $detectControls.AutoDetectUpdateTypeComboBox.SelectedItem = 'Cumulative Updates'
+
         $downloadPath = if (-not [string]::IsNullOrWhiteSpace($controls.UpdatePathTextBox.Text)) {
             $controls.UpdatePathTextBox.Text
         } else {
@@ -707,6 +758,7 @@ function Show-PSWimToolkitMainWindow {
         }
 
         $detectControls.DownloadPathTextBox.Text = $downloadPath
+        $detectControls.AutoDetectIncludePreviewCheckBox.IsChecked = $controls.IncludePreviewCheckBox.IsChecked
 
         $resultCollection = [System.Collections.ObjectModel.ObservableCollection[psobject]]::new()
         $detectControls.AutoDetectResults.ItemsSource = $resultCollection
@@ -720,12 +772,15 @@ function Show-PSWimToolkitMainWindow {
             $resultCollection.Clear()
             Update-AutoDetectStatus -Message 'Detecting updates...'
             $groups = $Items | Group-Object -Property Path
-            $includePreview = [bool]$controls.IncludePreviewCheckBox.IsChecked
+            $includePreview = [bool]$detectControls.AutoDetectIncludePreviewCheckBox.IsChecked
+            $selectedType = [string]$detectControls.AutoDetectUpdateTypeComboBox.SelectedItem
+            $typeFilter = if ([string]::IsNullOrWhiteSpace($selectedType)) { @('Cumulative Updates') } else { @($selectedType) }
+
             foreach ($group in $groups) {
                 $indices = $group.Group | ForEach-Object { $_.Index } | Where-Object { $_ } | Select-Object -Unique
                 if (-not $indices -or $indices.Count -eq 0) { $indices = @(1) }
                 try {
-                    $applicable = Get-WimApplicableUpdate -Path $group.Name -Index $indices -IncludePreview:$includePreview -ErrorAction Stop
+                    $applicable = Get-WimApplicableUpdate -Path $group.Name -Index $indices -IncludePreview:$includePreview -UpdateType $typeFilter -ErrorAction Stop
                 } catch {
                     Update-AutoDetectStatus -Message "Auto detect failed for $($group.Name): $($_.Exception.Message)"
                     continue
@@ -733,19 +788,23 @@ function Show-PSWimToolkitMainWindow {
 
                 foreach ($match in $applicable) {
                     if (-not $match.Update) { continue }
+                    $kb = $match.Update.KB
+                    $title = $match.Update.Title
+                    $classification = $match.Update.Classification
                     $resultCollection.Add([pscustomobject]@{
-                        WimPath       = $match.WimPath
-                        WimName       = $match.WimName
-                        Index         = $match.WimIndex
+                        WimPath        = $match.WimPath
+                        WimName        = $match.WimName
+                        Index          = $match.WimIndex
                         OperatingSystem = $match.OperatingSystem
-                        Release       = $match.Release
-                        Architecture  = $match.Architecture
-                        KB            = $match.Update.KB
-                        Title         = $match.Update.Title
-                        Classification = $match.Update.Classification
-                        LastUpdated   = $match.Update.LastUpdated
-                        Guid          = $match.Update.Guid
-                        CatalogUpdate = $match.Update
+                        Release        = $match.Release
+                        Architecture   = $match.Architecture
+                        UpdateType     = ($match.UpdateType -join ', ')
+                        KB             = $kb
+                        Title          = $title
+                        Classification = $classification
+                        LastUpdated    = $match.Update.LastUpdated
+                        Guid           = $match.Update.Guid
+                        CatalogUpdate  = $match.Update
                     }) | Out-Null
                 }
             }
@@ -758,6 +817,14 @@ function Show-PSWimToolkitMainWindow {
         }
 
         Invoke-AutoDetect
+
+        $detectControls.AutoDetectUpdateTypeComboBox.Add_SelectionChanged({
+            Invoke-AutoDetect
+        })
+
+        $detectControls.AutoDetectIncludePreviewCheckBox.Add_Click({
+            Invoke-AutoDetect
+        })
 
         $detectControls.BrowseDownloadPathButton.Add_Click({
             $dialogBrowse = [System.Windows.Forms.FolderBrowserDialog]::new()
@@ -787,7 +854,7 @@ function Show-PSWimToolkitMainWindow {
 
             try {
                 Update-AutoDetectStatus -Message 'Downloading detected updates...'
-                Save-WindowsUpdate -InputObject $updates -Destination $destination -DownloadAll:$true -ErrorAction Stop | Out-Null
+                Save-WindowsUpdate -InputObject $updates -Destination $destination -DownloadAll:$true -Force:$true -ErrorAction Stop | Out-Null
                 Update-AutoDetectStatus -Message "Downloaded $($updates.Count) update(s) to $destination."
                 $controls.UpdatePathTextBox.Text = $destination
             } catch {

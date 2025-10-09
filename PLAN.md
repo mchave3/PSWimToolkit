@@ -513,7 +513,7 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
 - [x] Extend logging hooks so WIM imports, detail views, and ISO extractions surface Stage/Info/Error events with correlation IDs.
 
 #### Update Catalog UX & Automation
-- [x] Enhance the catalog search dialog with drop-down filters (OS family, release, architecture, channel) populated from toolkit catalog facets.
+- [x] Enhance the catalog search dialog with drop-down filters (OS family, release, architecture, update type) populated from toolkit catalog facets.
 - [x] Cascade filter selections to build the catalog query automatically while still permitting manual search overrides.
 - [ ] Persist last-used filter defaults per user profile to streamline repeat searches. *(Defer to Phase 6 polish.)*
 - [x] Countersign validation so only supported combinations (OS, release, architecture) feed catalog queries while still allowing manual refinement.
@@ -526,8 +526,8 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
 - [x] Share catalog filter definitions between CLI/GUI by surfacing them through a new `Get-ToolkitCatalogFacet` helper.
 - [ ] Expand unit tests for ISO import helpers, detail parsing, and catalog auto-detect heuristics (mock DISM/MSCatalog calls). *(Open item.)*
 
-**Phase 5 Status**: ✅ Core UX/functionality completed on 2025-10-09 (GUI rename, ISO import workflow, detail viewer, catalog filters, auto-detect).  
-**Open Follow-ups**: Persist catalog filter defaults; add dedicated unit tests for ISO/import and auto-detect helpers.
+**Phase 5 Status**: ✅ Core UX/functionality re-implemented on 2025-10-09 using MSCatalogLTS logic (GUI rename, ISO import workflow, detail viewer, catalog facets, auto-detect).  
+**Open Follow-ups**: Persist catalog filter defaults; add dedicated unit tests for ISO/import and auto-detect helpers leveraging the MSCatalogLTS search surface.
 
 ---
 
