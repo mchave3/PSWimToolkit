@@ -117,10 +117,10 @@ function Show-PSWimToolkitMainWindow {
     $moduleInfo = Get-Module -Name PSWimToolkit | Select-Object -First 1
     $moduleVersion = if ($moduleInfo) { $moduleInfo.Version.ToString() } else { 'Unknown' }
     $workspaceRoot = Get-ToolkitDataPath
-    $guiMountRoot = Join-Path -Path $workspaceRoot -ChildPath 'Mounts'
-    $guiLogRoot = Join-Path -Path $workspaceRoot -ChildPath 'Logs'
-    $guiImportRoot = Join-Path -Path $workspaceRoot -ChildPath 'Imports'
-    $guiUpdatesRoot = Get-ToolkitUpdatesRoot
+    $mountRoot = $script:WorkspacePaths.Mounts
+    $logRoot = $script:WorkspacePaths.Logs
+    $importRoot = $script:WorkspacePaths.Imports
+    $updatesRoot = Get-ToolkitUpdatesRoot
 
     $state = [pscustomobject]@{
         Job               = $null
@@ -130,10 +130,10 @@ function Show-PSWimToolkitMainWindow {
         AllLogData        = [System.Collections.Generic.List[psobject]]::new()
         ModulePath        = $ModulePath
         ModuleVersion     = $moduleVersion
-        MountRoot         = $guiMountRoot
-        LogBase           = $guiLogRoot
-        ImportRoot        = $guiImportRoot
-        UpdatesRoot       = $guiUpdatesRoot
+        MountRoot         = $mountRoot
+        LogBase           = $logRoot
+        ImportRoot        = $importRoot
+        UpdatesRoot       = $updatesRoot
         WimMetadataCache  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[psobject]]]::new()
         CatalogFacets     = $null
     }

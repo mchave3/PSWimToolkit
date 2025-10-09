@@ -26,7 +26,6 @@ $workspaceDefaults = [ordered]@{
     Imports    = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Imports'
     Cache      = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Cache'
     Temp       = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Temp'
-    GuiRoot    = Join-Path -Path $script:ProgramDataRoot -ChildPath 'GUI'
 }
 
 if (-not (Get-Variable -Name 'WorkspacePaths' -Scope Script -ErrorAction SilentlyContinue) -or -not $script:WorkspacePaths) {
@@ -41,10 +40,6 @@ if (-not (Get-Variable -Name 'WorkspacePaths' -Scope Script -ErrorAction Silentl
         }
     }
 }
-
-$script:WorkspacePaths['GuiLogs']    = Join-Path -Path $script:WorkspacePaths.GuiRoot -ChildPath 'Logs'
-$script:WorkspacePaths['GuiMounts']  = Join-Path -Path $script:WorkspacePaths.GuiRoot -ChildPath 'Mounts'
-$script:WorkspacePaths['GuiImports'] = Join-Path -Path $script:WorkspacePaths.GuiRoot -ChildPath 'Imports'
 
 $workspaceFolders = $script:WorkspacePaths.Values | Sort-Object -Unique
 foreach ($folder in $workspaceFolders) {
