@@ -51,6 +51,7 @@ function Show-PSWimToolkitMainWindow {
         ImportIsoButton       = $window.FindName('ImportIsoButton')
         WimDetailsButton      = $window.FindName('WimDetailsButton')
         RemoveWimButton       = $window.FindName('RemoveWimButton')
+        DeleteWimButton       = $window.FindName('DeleteWimButton')
         ClearWimButton        = $window.FindName('ClearWimButton')
         WimGrid               = $window.FindName('WimGrid')
         UpdatePathTextBox     = $window.FindName('UpdatePathTextBox')
@@ -153,6 +154,8 @@ function Show-PSWimToolkitMainWindow {
         $controls.UpdatePathTextBox.Text = $state.UpdatesRoot
     }
 
+    Load-WimsFromImport
+
     function Invoke-UiAction {
         param (
             [System.Windows.Threading.Dispatcher] $Dispatcher,
@@ -237,6 +240,128 @@ function Show-PSWimToolkitMainWindow {
                 $Item.Details = "{0} ({1})" -f $primary.Name, $primary.Architecture
                 $Item.Metadata = $metadata
             }
+        }
+    }
+
+    function Add-WimEntry {
+        param (
+            [Parameter(Mandatory)]
+            [string] $Path
+        )
+
+        if ([string]::IsNullOrWhiteSpace($Path)) {
+            return $null
+        }
+
+        try {
+            $resolved = [System.IO.Path]::GetFullPath($Path)
+        } catch {
+            Write-Warning "Unable to resolve WIM path '$Path': $($_.Exception.Message)"
+            return $null
+        }
+
+        $existing = $wimItems | Where-Object {
+            try {
+                [System.IO.Path]::GetFullPath($_.Path) -eq $resolved
+            } catch {
+                $false
+            }
+        }
+
+        if ($existing) {
+            return $existing | Select-Object -First 1
+        }
+
+        $item = New-WimItem -Path $resolved
+        $wimItems.Add($item)
+        Refresh-WimItemDetails -Item $item -Force
+        if ($item.Metadata -and $item.Metadata.Count -gt 0 -and -not $item.Index) {
+            $item.Index = $item.Metadata[0].Index
+        }
+        return $item
+    }
+
+    function Copy-WimIntoImport {
+        param (
+            [Parameter(Mandatory)]
+            [string] $SourcePath
+        )
+
+        $resolvedSource = (Resolve-Path -LiteralPath $SourcePath -ErrorAction Stop).ProviderPath
+        $importRoot = $state.ImportRoot
+        if (-not (Test-Path -LiteralPath $importRoot -PathType Container)) {
+            New-Item -Path $importRoot -ItemType Directory -Force | Out-Null
+        }
+
+        $importRootFull = [System.IO.Path]::GetFullPath($importRoot)
+        $sourceFull = [System.IO.Path]::GetFullPath($resolvedSource)
+        if ($sourceFull.StartsWith($importRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $sourceFull
+        }
+
+        $fileName = [System.IO.Path]::GetFileName($sourceFull)
+        $destination = Join-Path -Path $importRootFull -ChildPath $fileName
+        if (Test-Path -LiteralPath $destination) {
+            $base = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+            $extension = [System.IO.Path]::GetExtension($fileName)
+            do {
+                $timestamp = (Get-Date -Format 'yyyyMMddHHmmss')
+                $candidate = Join-Path -Path $importRootFull -ChildPath ("{0}_{1}{2}" -f $base, $timestamp, $extension)
+            } while (Test-Path -LiteralPath $candidate)
+            $destination = $candidate
+        }
+
+        Copy-Item -LiteralPath $sourceFull -Destination $destination -Force:$false -ErrorAction Stop
+        return $destination
+    }
+
+    function Remove-WimEntry {
+        param (
+            [Parameter(Mandatory)]
+            [psobject] $Item,
+            [switch] $DeleteFile
+        )
+
+        $removed = $false
+        if ($Item) {
+            $removed = $wimItems.Remove($Item)
+            $resolved = $null
+            if ($Item.Path) {
+                try {
+                    $resolved = [System.IO.Path]::GetFullPath($Item.Path)
+                } catch {
+                    $resolved = $Item.Path
+                }
+
+                if ($resolved -and $state.WimMetadataCache.ContainsKey($resolved)) {
+                    $null = $state.WimMetadataCache.Remove($resolved)
+                }
+
+                if ($DeleteFile -and $resolved -and (Test-Path -LiteralPath $resolved -PathType Leaf)) {
+                    $importRootFull = [System.IO.Path]::GetFullPath($state.ImportRoot)
+                    if ($resolved.StartsWith($importRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        try {
+                            Remove-Item -LiteralPath $resolved -Force -ErrorAction Stop
+                        } catch {
+                            Write-Warning "Failed to delete WIM '$resolved': $($_.Exception.Message)"
+                        }
+                    }
+                }
+            }
+        }
+
+        return $removed
+    }
+
+    function Load-WimsFromImport {
+        $importRoot = $state.ImportRoot
+        if (-not (Test-Path -LiteralPath $importRoot -PathType Container)) {
+            return
+        }
+
+        $existing = Get-ChildItem -Path $importRoot -Filter '*.wim' -File -Recurse -ErrorAction SilentlyContinue
+        foreach ($entry in $existing) {
+            Add-WimEntry -Path $entry.FullName | Out-Null
         }
     }
 
@@ -1219,16 +1344,24 @@ function Show-PSWimToolkitMainWindow {
         $dialog = [Microsoft.Win32.OpenFileDialog]::new()
         $dialog.Filter = 'WIM images (*.wim)|*.wim|All files (*.*)|*.*'
         $dialog.Multiselect = $true
-        if ($dialog.ShowDialog()) {
-            foreach ($file in $dialog.FileNames) {
-                if ($wimItems | Where-Object { $_.Path -eq $file }) { continue }
-                $item = New-WimItem -Path $file
-                $wimItems.Add($item)
-                Refresh-WimItemDetails -Item $item -Force
-                if ($item.Metadata -and $item.Metadata.Count -gt 0) {
-                    $item.Index = $item.Metadata[0].Index
+        if (-not $dialog.ShowDialog()) { return }
+
+        $added = 0
+        foreach ($file in $dialog.FileNames) {
+            try {
+                $destination = Copy-WimIntoImport -SourcePath $file
+                if (Add-WimEntry -Path $destination) {
+                    $added++
                 }
+            } catch {
+                Write-Warning "Failed to import WIM '$file': $($_.Exception.Message)"
             }
+        }
+
+        if ($added -gt 0) {
+            Update-Status -Message ("Imported {0} WIM file(s) into workspace." -f $added)
+        } else {
+            Update-Status -Message 'No WIM files were imported.'
         }
     })
 
@@ -1244,14 +1377,9 @@ function Show-PSWimToolkitMainWindow {
             $added = 0
             foreach ($import in $imports) {
                 if ([System.IO.Path]::GetExtension($import.Destination) -ne '.wim') { continue }
-                if ($wimItems | Where-Object { $_.Path -eq $import.Destination }) { continue }
-                $item = New-WimItem -Path $import.Destination
-                $wimItems.Add($item)
-                Refresh-WimItemDetails -Item $item -Force
-                if ($item.Metadata -and $item.Metadata.Count -gt 0) {
-                    $item.Index = $item.Metadata[0].Index
+                if (Add-WimEntry -Path $import.Destination) {
+                    $added++
                 }
-                $added++
             }
             $message = if ($added -gt 0) {
                 "Imported $added WIM file(s) from ISO."
@@ -1268,17 +1396,31 @@ function Show-PSWimToolkitMainWindow {
         $selected = @($controls.WimGrid.SelectedItems)
         if (-not $selected -or $selected.Count -eq 0) { return }
         foreach ($item in @($selected)) {
-            $null = $wimItems.Remove($item)
-            $resolved = [System.IO.Path]::GetFullPath($item.Path)
-            if ($state.WimMetadataCache.ContainsKey($resolved)) {
-                $null = $state.WimMetadataCache.Remove($resolved)
+            Remove-WimEntry -Item $item | Out-Null
+        }
+    })
+
+    $controls.DeleteWimButton.Add_Click({
+        $selected = @($controls.WimGrid.SelectedItems)
+        if (-not $selected -or $selected.Count -eq 0) {
+            [System.Windows.MessageBox]::Show('Select at least one WIM before deleting from disk.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+            return
+        }
+        $removed = 0
+        foreach ($item in @($selected)) {
+            if (Remove-WimEntry -Item $item -DeleteFile) {
+                $removed++
             }
+        }
+        if ($removed -gt 0) {
+            Update-Status -Message ("Deleted {0} WIM file(s) from the import workspace." -f $removed)
         }
     })
 
     $controls.ClearWimButton.Add_Click({
-        $wimItems.Clear()
-        $state.WimMetadataCache.Clear()
+        foreach ($item in @($wimItems.ToArray())) {
+            Remove-WimEntry -Item $item | Out-Null
+        }
     })
 
     $controls.WimDetailsButton.Add_Click({
