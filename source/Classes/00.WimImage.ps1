@@ -9,7 +9,7 @@ class WimImage {
     [string] $CurrentMountPath
     [bool] $IsMounted
 
-    WimImage([string] $ImagePath, [int] $ImageIndex = 1) {
+    WimImage([string] $ImagePath, [int] $ImageIndex = 1, [bool] $SkipRefresh = $false) {
         if ([string]::IsNullOrWhiteSpace($ImagePath)) {
             throw [System.ArgumentException]::new('Image path must be supplied.', 'ImagePath')
         }
@@ -17,7 +17,7 @@ class WimImage {
         $this.Path = [System.IO.Path]::GetFullPath($ImagePath)
         $this.Index = if ($ImageIndex -gt 0) { $ImageIndex } else { 1 }
 
-        if (Test-Path -LiteralPath $this.Path) {
+        if (-not $SkipRefresh -and (Test-Path -LiteralPath $this.Path)) {
             $this.RefreshMetadata()
         }
     }

@@ -29,7 +29,7 @@ function Read-WimCache {
 
         $wimImages = @()
         foreach ($img in $cache.Images) {
-            $wimImage = [WimImage]::new($cache.WimPath, $img.Index)
+            $wimImage = [WimImage]::new($cache.WimPath, $img.Index, $true)
             $wimImage.Name = $img.Name
             $wimImage.Description = $img.Description
             $wimImage.Version = [Version]$img.Version
