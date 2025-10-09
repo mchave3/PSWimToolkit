@@ -340,6 +340,8 @@ function Show-PSWimToolkitMainWindow {
                     if ($resolved.StartsWith($importRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
                         try {
                             Remove-Item -LiteralPath $resolved -Force -ErrorAction Stop
+                            # Also remove the cache file if it exists
+                            Remove-WimCache -WimPath $resolved | Out-Null
                         } catch {
                             Write-Warning "Failed to delete WIM '$resolved': $($_.Exception.Message)"
                         }
