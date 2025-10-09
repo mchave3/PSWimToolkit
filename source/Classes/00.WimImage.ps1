@@ -27,9 +27,10 @@ class WimImage {
             $imageInfo = Get-WindowsImage -ImagePath $this.Path -Index $this.Index -ErrorAction Stop
             $this.Name = $imageInfo.ImageName
             $this.Description = $imageInfo.ImageDescription
-            $this.Version = [Version]$imageInfo.Version
+            $versionString = "{0}.{1}.{2}.{3}" -f $imageInfo.MajorVersion, $imageInfo.MinorVersion, $imageInfo.Build, $imageInfo.SPBuild
+            $this.Version = [Version]$versionString
             $this.Size = [UInt64]$imageInfo.ImageSize
-            $this.Architecture = $imageInfo.ImageArchitecture
+            $this.Architecture = $imageInfo.Architecture
         } catch {
             Write-ToolkitLog -Message "Unable to read WIM metadata for $($this.Path): $($_.Exception.Message)" -Type Warning -Source 'WimImage'
         }

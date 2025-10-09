@@ -39,29 +39,44 @@ function Get-WimImageInfo {
 
                 Write-ToolkitLog -Message ("Inspecting WIM image {0}" -f $fileInfo.FullName) -Type Stage -Source 'Get-WimImageInfo'
 
+                # First, get basic info to determine available indices
                 try {
-                    $imageInfos = Get-WindowsImage -ImagePath $fileInfo.FullName -ErrorAction Stop
+                    $basicImageInfos = Get-WindowsImage -ImagePath $fileInfo.FullName -ErrorAction Stop
                 } catch {
                     Write-ToolkitLog -Message ("Failed to read image metadata for {0}: {1}" -f $fileInfo.FullName, $_.Exception.Message) -Type Error -Source 'Get-WimImageInfo'
                     continue
                 }
 
-                $selectedInfos = if ($Index) {
-                    $imageInfos | Where-Object { $Index -contains $_.ImageIndex }
+                # Filter indices if specified
+                $indicesToProcess = if ($Index) {
+                    $basicImageInfos | Where-Object { $Index -contains $_.ImageIndex } | Select-Object -ExpandProperty ImageIndex
                 } else {
-                    $imageInfos
+                    $basicImageInfos | Select-Object -ExpandProperty ImageIndex
                 }
 
-                foreach ($info in $selectedInfos) {
-                    $wimImage = [WimImage]::new($fileInfo.FullName, $info.ImageIndex)
-                    $wimImage.Name = $info.ImageName
-                    $wimImage.Description = $info.ImageDescription
-                    $wimImage.Version = [Version]$info.Version
-                    $wimImage.Size = [UInt64]$info.ImageSize
-                    $wimImage.Architecture = $info.ImageArchitecture
+                # Get detailed info for each index
+                $wimFilePath = $fileInfo.FullName
+                $indicesToProcess | ForEach-Object -ThrottleLimit 5 -Parallel {
+                    $imageIndex = $_
+                    $wimPath = $using:wimFilePath
 
-                    Write-ToolkitLog -Message ("Found Index {0} ({1}) in {2}" -f $wimImage.Index, $wimImage.Name, $fileInfo.FullName) -Type Info -Source 'Get-WimImageInfo'
-                    Write-Output $wimImage
+                    try {
+                        # Get-WindowsImage with -Index returns detailed WimImageInfoObject
+                        $detailedInfo = Get-WindowsImage -ImagePath $wimPath -Index $imageIndex -ErrorAction Stop
+
+                        $wimImage = [WimImage]::new($wimPath, $imageIndex)
+                        $wimImage.Name = $detailedInfo.ImageName
+                        $wimImage.Description = $detailedInfo.ImageDescription
+                        $versionString = "{0}.{1}.{2}.{3}" -f $detailedInfo.MajorVersion, $detailedInfo.MinorVersion, $detailedInfo.Build, $detailedInfo.SPBuild
+                        $wimImage.Version = [Version]$versionString
+                        $wimImage.Size = [UInt64]$detailedInfo.ImageSize
+                        $wimImage.Architecture = $detailedInfo.Architecture
+
+                        Write-ToolkitLog -Message ("Found Index {0} ({1}) in {2}" -f $wimImage.Index, $wimImage.Name, $wimPath) -Type Info -Source 'Get-WimImageInfo'
+                        Write-Output $wimImage
+                    } catch {
+                        Write-ToolkitLog -Message ("Failed to read detailed metadata for index {0} in {1}: {2}" -f $imageIndex, $wimPath, $_.Exception.Message) -Type Error -Source 'Get-WimImageInfo'
+                    }
                 }
             }
         }
