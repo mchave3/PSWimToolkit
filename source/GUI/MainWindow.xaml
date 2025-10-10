@@ -1,11 +1,21 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PSWimToolkit - Provisioning Console"
-        Height="720"
-        Width="1100"
         WindowStartupLocation="CenterScreen"
         Background="#F5F7FA"
         FontFamily="Segoe UI">
+    <Window.Style>
+        <Style TargetType="Window">
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="WindowState" Value="Normal">
+                    <Setter Property="MinWidth" Value="1000"/>
+                    <Setter Property="MinHeight" Value="1000"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Auto">
         <Grid Margin="12">
@@ -59,6 +69,11 @@
                     <Button x:Name="WimDetailsButton"
                             Content="Details..."
                             Margin="0,0,16,0"/>
+                    <Border Width="1"
+                            Height="24"
+                            Background="#D0D3D9"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"/>
                     <Button x:Name="RemoveWimButton"
                             Content="Remove Selected"
                             Margin="0,0,8,0"/>
@@ -361,6 +376,7 @@
                 <ListView x:Name="LogList"
                           Grid.Row="1"
                           Margin="0,10,0,10"
+                          MinHeight="150"
                           ItemsPanel="{DynamicResource LogItemsPanel}">
                     <ListView.View>
                         <GridView>
