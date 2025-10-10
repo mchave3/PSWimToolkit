@@ -2,6 +2,8 @@ function Start-PSWimToolkit {
     [CmdletBinding()]
     param ()
 
+    Clear-Host
+
     Write-ToolkitLog -Message "=== Starting PSWimToolkit GUI ===" -Type Stage -Source 'Start-PSWimToolkit'
 
     $module = Get-Module -Name PSWimToolkit

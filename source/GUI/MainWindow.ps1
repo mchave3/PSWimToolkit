@@ -955,6 +955,47 @@ function Show-PSWimToolkitMainWindow {
             $detectControls.StatusText.Text = $Message
         }
 
+        function Get-UpdateKbValue {
+            param (
+                [Parameter()]
+                [object] $Update
+            )
+
+            if (-not $Update) { return $null }
+
+            $kbValue = $null
+            try {
+                $kbValue = $Update.KB
+            } catch {
+                $kbValue = $null
+            }
+            if (-not [string]::IsNullOrWhiteSpace($kbValue)) {
+                return $kbValue
+            }
+
+            $titleValue = $null
+            try {
+                $titleValue = $Update.Title
+            } catch {
+                $titleValue = $null
+            }
+            if (-not [string]::IsNullOrWhiteSpace($titleValue) -and ($titleValue -match '(KB\d{4,7})')) {
+                return $matches[1]
+            }
+
+            $guidValue = $null
+            try {
+                $guidValue = $Update.Guid
+            } catch {
+                $guidValue = $null
+            }
+            if (-not [string]::IsNullOrWhiteSpace($guidValue) -and ($guidValue -match '(KB\d{4,7})')) {
+                return $matches[1]
+            }
+
+            return $null
+        }
+
         function Invoke-AutoDetect {
             $resultCollection.Clear()
             Update-AutoDetectStatus -Message 'Detecting updates...'
@@ -964,8 +1005,13 @@ function Show-PSWimToolkitMainWindow {
             $typeFilter = if ([string]::IsNullOrWhiteSpace($selectedType)) { @('Cumulative Updates') } else { @($selectedType) }
 
             foreach ($group in $groups) {
-                $indices = $group.Group | ForEach-Object { $_.Index } | Where-Object { $_ } | Select-Object -Unique
-                if (-not $indices -or $indices.Count -eq 0) { $indices = @(1) }
+                $indices = @(
+                    $group.Group |
+                        ForEach-Object { $_.Index } |
+                        Where-Object { $_ } |
+                        Select-Object -Unique
+                )
+                if ($indices.Count -eq 0) { $indices = @(1) }
                 try {
                     $applicable = Get-WimApplicableUpdate -Path $group.Name -Index $indices -IncludePreview:$includePreview -UpdateType $typeFilter -ErrorAction Stop
                 } catch {
@@ -975,7 +1021,7 @@ function Show-PSWimToolkitMainWindow {
 
                 foreach ($match in $applicable) {
                     if (-not $match.Update) { continue }
-                    $kb = $match.Update.KB
+                    $kb = Get-UpdateKbValue -Update $match.Update
                     $title = $match.Update.Title
                     $classification = $match.Update.Classification
                     $resultCollection.Add([pscustomobject]@{
