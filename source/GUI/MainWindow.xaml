@@ -131,11 +131,13 @@
                          Grid.Row="0"
                          Grid.Column="1"
                          Margin="6,0"
-                         VerticalAlignment="Center"/>
+                         VerticalAlignment="Center"
+                         IsReadOnly="True"
+                         IsReadOnlyCaretVisible="True"/>
                 <Button x:Name="BrowseUpdateButton"
                         Grid.Row="0"
                         Grid.Column="2"
-                        Content="Browse..."
+                        Content="Open"
                         Margin="6,0,0,0"/>
 
                 <TextBlock Grid.Row="1"
@@ -146,11 +148,13 @@
                          Grid.Row="1"
                          Grid.Column="1"
                          Margin="6,6"
-                         VerticalAlignment="Center"/>
+                         VerticalAlignment="Center"
+                         IsReadOnly="True"
+                         IsReadOnlyCaretVisible="True"/>
                 <Button x:Name="BrowseSxSButton"
                         Grid.Row="1"
                         Grid.Column="2"
-                        Content="Browse..."
+                        Content="Open"
                         Margin="6,6,0,0"/>
 
                 <TextBlock Grid.Row="2"
@@ -161,11 +165,13 @@
                          Grid.Row="2"
                          Grid.Column="1"
                          Margin="6,6"
-                         VerticalAlignment="Center"/>
+                         VerticalAlignment="Center"
+                         IsReadOnly="True"
+                         IsReadOnlyCaretVisible="True"/>
                 <Button x:Name="BrowseOutputButton"
                         Grid.Row="2"
                         Grid.Column="2"
-                        Content="Browse..."
+                        Content="Open"
                         Margin="6,6,0,0"/>
 
                 <StackPanel Grid.Row="3"

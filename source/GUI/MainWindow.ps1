@@ -121,6 +121,8 @@ function Show-PSWimToolkitMainWindow {
     $logRoot = $script:WorkspacePaths.Logs
     $importRoot = $script:WorkspacePaths.Imports
     $updatesRoot = Get-ToolkitUpdatesRoot
+    $sxsRoot = Get-ToolkitDataPath -Child 'SxS'
+    $outputRoot = Get-ToolkitDataPath -Child 'Output'
 
     $state = [pscustomobject]@{
         Job               = $null
@@ -134,6 +136,8 @@ function Show-PSWimToolkitMainWindow {
         LogBase           = $logRoot
         ImportRoot        = $importRoot
         UpdatesRoot       = $updatesRoot
+        SxSRoot           = $sxsRoot
+        OutputRoot        = $outputRoot
         WimMetadataCache  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[psobject]]]::new()
         CatalogFacets     = $null
     }
@@ -150,8 +154,24 @@ function Show-PSWimToolkitMainWindow {
         New-Item -Path $state.ImportRoot -ItemType Directory -Force | Out-Null
     }
 
+    if (-not (Test-Path -LiteralPath $state.SxSRoot)) {
+        New-Item -Path $state.SxSRoot -ItemType Directory -Force | Out-Null
+    }
+
+    if (-not (Test-Path -LiteralPath $state.OutputRoot)) {
+        New-Item -Path $state.OutputRoot -ItemType Directory -Force | Out-Null
+    }
+
     if ([string]::IsNullOrWhiteSpace($controls.UpdatePathTextBox.Text)) {
         $controls.UpdatePathTextBox.Text = $state.UpdatesRoot
+    }
+
+    if ([string]::IsNullOrWhiteSpace($controls.SxSPathTextBox.Text)) {
+        $controls.SxSPathTextBox.Text = $state.SxSRoot
+    }
+
+    if ([string]::IsNullOrWhiteSpace($controls.OutputPathTextBox.Text)) {
+        $controls.OutputPathTextBox.Text = $state.OutputRoot
     }
 
     function Invoke-UiAction {
@@ -181,6 +201,38 @@ function Show-PSWimToolkitMainWindow {
             Status  = 'Pending'
             Details = ''
             Metadata = $null
+        }
+    }
+
+    function Open-FolderPath {
+        param (
+            [Parameter(Mandatory)]
+            [string] $Path,
+
+            [Parameter(Mandatory)]
+            [string] $DisplayName
+        )
+
+        if ([string]::IsNullOrWhiteSpace($Path)) {
+            [System.Windows.MessageBox]::Show("No path configured for $DisplayName.", 'PSWimToolkit', 'OK', 'Information') | Out-Null
+            return
+        }
+
+        $resolvedPath = $Path
+        try {
+            if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+                New-Item -Path $Path -ItemType Directory -Force | Out-Null
+            }
+            $resolvedPath = [System.IO.Path]::GetFullPath($Path)
+        } catch {
+            [System.Windows.MessageBox]::Show("Unable to prepare $DisplayName folder: $($_.Exception.Message)", 'PSWimToolkit', 'OK', 'Error') | Out-Null
+            return
+        }
+
+        try {
+            Start-Process -FilePath 'explorer.exe' -ArgumentList @("`"$resolvedPath`"") -WindowStyle Normal | Out-Null
+        } catch {
+            [System.Windows.MessageBox]::Show("Unable to open $DisplayName folder: $($_.Exception.Message)", 'PSWimToolkit', 'OK', 'Error') | Out-Null
         }
     }
 
@@ -442,9 +494,9 @@ function Show-PSWimToolkitMainWindow {
         $controls.WimGrid.Items.Refresh()
         $controls.ProgressList.Items.Refresh()
 
-        if ($config.UpdatePath) { $controls.UpdatePathTextBox.Text = $config.UpdatePath } else { $controls.UpdatePathTextBox.Clear() }
-        if ($config.SxSPath) { $controls.SxSPathTextBox.Text = $config.SxSPath } else { $controls.SxSPathTextBox.Clear() }
-        if ($config.OutputPath) { $controls.OutputPathTextBox.Text = $config.OutputPath } else { $controls.OutputPathTextBox.Clear() }
+        if ($config.UpdatePath) { $controls.UpdatePathTextBox.Text = $config.UpdatePath } else { $controls.UpdatePathTextBox.Text = $state.UpdatesRoot }
+        if ($config.SxSPath) { $controls.SxSPathTextBox.Text = $config.SxSPath } else { $controls.SxSPathTextBox.Text = $state.SxSRoot }
+        if ($config.OutputPath) { $controls.OutputPathTextBox.Text = $config.OutputPath } else { $controls.OutputPathTextBox.Text = $state.OutputRoot }
 
         $controls.EnableNetFxCheckBox.IsChecked = $config.EnableNetFx3
         $controls.ForceCheckBox.IsChecked = $config.Force
@@ -1444,27 +1496,15 @@ function Show-PSWimToolkitMainWindow {
     })
 
     $controls.BrowseUpdateButton.Add_Click({
-        $dialog = [System.Windows.Forms.FolderBrowserDialog]::new()
-        $dialog.Description = 'Select the folder that contains update packages (.cab/.msu)'
-        if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-            $controls.UpdatePathTextBox.Text = $dialog.SelectedPath
-        }
+        Open-FolderPath -Path $controls.UpdatePathTextBox.Text -DisplayName 'Update folder'
     })
 
     $controls.BrowseSxSButton.Add_Click({
-        $dialog = [System.Windows.Forms.FolderBrowserDialog]::new()
-        $dialog.Description = 'Select the SxS source folder for .NET Framework 3.5'
-        if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-            $controls.SxSPathTextBox.Text = $dialog.SelectedPath
-        }
+        Open-FolderPath -Path $controls.SxSPathTextBox.Text -DisplayName 'SxS folder'
     })
 
     $controls.BrowseOutputButton.Add_Click({
-        $dialog = [System.Windows.Forms.FolderBrowserDialog]::new()
-        $dialog.Description = 'Select a folder where updated WIM files should be saved'
-        if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-            $controls.OutputPathTextBox.Text = $dialog.SelectedPath
-        }
+        Open-FolderPath -Path $controls.OutputPathTextBox.Text -DisplayName 'Output folder'
     })
 
     $controls.StartButton.Add_Click({
