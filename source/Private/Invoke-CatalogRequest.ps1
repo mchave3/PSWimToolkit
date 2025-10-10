@@ -12,8 +12,6 @@ function Invoke-CatalogRequest {
         [string] $Method = 'Get'
     )
 
-    Initialize-HtmlParser
-
     $headers = @{
         'Cache-Control' = 'no-cache'
         'Pragma'        = 'no-cache'
