@@ -74,6 +74,17 @@ function Import-WimFromIso {
 
                 $sourcesPath = Join-Path -Path $drivePrefix -ChildPath 'sources'
                 $wimFiles = Get-ChildItem -LiteralPath $sourcesPath -Filter '*.wim' -File -ErrorAction SilentlyContinue
+                if ($wimFiles) {
+                    $filteredWimFiles = @()
+                    foreach ($wim in $wimFiles) {
+                        if ($wim.Name -ieq 'boot.wim') {
+                            Write-ToolkitLog -Message "Skipping boot image $($wim.FullName)." -Type Debug -Source 'Import-WimFromIso'
+                            continue
+                        }
+                        $filteredWimFiles += $wim
+                    }
+                    $wimFiles = $filteredWimFiles
+                }
                 $esdFiles = Get-ChildItem -LiteralPath $sourcesPath -Filter '*.esd' -File -ErrorAction SilentlyContinue
 
                 $copied = @()

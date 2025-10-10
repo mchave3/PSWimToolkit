@@ -41,7 +41,7 @@ function Mount-WimImage {
         } else {
             try {
                 $fullPath = (Resolve-Path -LiteralPath $ImagePath -ErrorAction Stop).ProviderPath
-                $resolvedImage = [WimImage]::new($fullPath, $Index)
+                $resolvedImage = [WimImage]::new($fullPath, $Index, $false)
             } catch {
                 Write-ToolkitLog -Message "WIM path '$ImagePath' could not be resolved. $($_.Exception.Message)" -Type Error -Source 'Mount-WimImage'
                 throw

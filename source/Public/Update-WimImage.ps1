@@ -68,7 +68,7 @@ function Update-WimImage {
         $logFile = Initialize-LogFile -ForceNew
         Write-ToolkitLog -Message "Provisioning log initialized at $logFile." -Type Debug -Source 'Update-WimImage'
 
-        $wimImage = [WimImage]::new($resolvedWimPath, $Index)
+        $wimImage = [WimImage]::new($resolvedWimPath, $Index, $false)
         $job = [ProvisioningJob]::new($wimImage, $logFile)
         $job.Start()
 

@@ -123,7 +123,8 @@ function Get-WimImageInfo {
                     $scannedImages = @()
                     foreach ($result in $wimImages) {
                         if ($result.Success) {
-                            $wimImage = [WimImage]::new($result.Path, $result.Index)
+                            # Skip refresh because metadata is set manually from collected details
+                            $wimImage = [WimImage]::new($result.Path, $result.Index, $true)
                             $wimImage.Name = $result.Name
                             $wimImage.Description = $result.Description
                             $versionString = "{0}.{1}.{2}.{3}" -f $result.MajorVersion, $result.MinorVersion, $result.Build, $result.SPBuild
