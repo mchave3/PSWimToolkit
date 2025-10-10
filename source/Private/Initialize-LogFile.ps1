@@ -40,12 +40,11 @@ function Initialize-LogFile {
 
     $maxCount = [int]($script:LogConfig.MaxFileCount)
     if ($maxCount -gt 0) {
-        $logs = Get-ChildItem -Path $logDirectory -Filter 'PSWimToolkit_*.log' -File -ErrorAction SilentlyContinue | Sort-Object CreationTime
-        if ($logs) {
-            $excess = $logs.Count - $maxCount
-            if ($excess -gt 0) {
-                $logs | Select-Object -First $excess | Remove-Item -Force -ErrorAction SilentlyContinue
-            }
+        $logs = @(Get-ChildItem -Path $logDirectory -Filter 'PSWimToolkit_*.log' -File -ErrorAction SilentlyContinue | Sort-Object CreationTime)
+        $logCount = $logs.Count
+        if ($logCount -gt $maxCount) {
+            $excess = $logCount - $maxCount
+            $logs | Select-Object -First $excess | Remove-Item -Force -ErrorAction SilentlyContinue
         }
     }
 
