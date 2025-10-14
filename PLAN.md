@@ -76,7 +76,7 @@ PSWimToolkit/
 
 ## Workspace Defaults
 
-- Default data root: `%ProgramData%\PSWimToolkit` with subfolders for `Logs`, `Mounts`, `Imports`, `Updates`, `Cache`, `Temp`, and GUI-specific roots.
+- Default data root: `%ProgramData%\PSWimToolkit` with subfolders for `Logs`, `Mounts`, `Imports`, `Updates`, and GUI-specific roots.
 - Updates workspace: `%ProgramData%\PSWimToolkit\Updates\<OperatingSystem>\<Release>\<UpdateType>` (for example `Windows 11\23H2\Cumulative Updates`). Paths are created during catalog downloads.
 - CLI helpers: `Get-ToolkitDataPath`, `Get-ToolkitUpdatesRoot`, and `Get-ToolkitUpdatePath` expose strongly-typed paths for scripts and cmdlets.
 - Provisioning and catalog download cmdlets resolve defaults through the workspace helpers when paths are not supplied explicitly.
@@ -546,7 +546,7 @@ Set-PSWimToolkitLogConfig -LogPath "D:\Logs" -MaxLogSizeMB 50
 
 #### Common Data Root
 - [ ] Introduce a `Get-ToolkitDataRoot` helper that resolves `%ProgramData%\PSWimToolkit`, seeds the folder tree during module initialization, and reuses cached results.
-- [ ] Define canonical subfolders (`Logs`, `Mounts`, `Imports`, `Cache`, `GUI`, `Temp`) and expose them via module-level configuration.
+- [ ] Define canonical subfolders (`Logs`, `Mounts`, `Imports`, `GUI`) and expose them via module-level configuration.
 - [ ] Update default parameter values and fallbacks in CLI (`Update-WimImage`, `Start-ParallelProvisioning`, `Import-WimFromIso`, etc.) and GUI bootstrapping to consume the shared helper.
 - [ ] Allow environment variable or settings overrides (e.g., `$env:PSWimToolkitRoot`, module preference) for environments that require alternative storage.
 - [ ] Normalize the updates workspace as `%ProgramData%\PSWimToolkit\Updates\<OS>\<Release>\<UpdateType>` and publish helpers for discovery.

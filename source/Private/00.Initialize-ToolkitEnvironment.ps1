@@ -26,8 +26,6 @@ $workspaceDefaults = [ordered]@{
     Updates    = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Updates'
     Mounts     = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Mounts'
     Imports    = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Imports'
-    Cache      = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Cache'
-    Temp       = Join-Path -Path $script:ProgramDataRoot -ChildPath 'Temp'
 }
 
 if (-not (Get-Variable -Name 'WorkspacePaths' -Scope Script -ErrorAction SilentlyContinue) -or -not $script:WorkspacePaths) {
