@@ -171,9 +171,9 @@
             <!--  Update Configuration  -->
             <GroupBox
                 Grid.Row="2"
-                Margin="0,0,0,12"
+                Margin="5"
                 Header="Update Configuration">
-                <Grid Margin="0,4,0,4">
+                <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -190,13 +190,15 @@
                     <TextBlock
                         Grid.Row="0"
                         Grid.Column="0"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Text="Update folder:" />
                     <TextBox
                         x:Name="UpdatePathTextBox"
                         Grid.Row="0"
                         Grid.Column="1"
-                        Margin="6,0"
+                        Margin="5"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
                         IsReadOnly="True"
                         IsReadOnlyCaretVisible="True" />
@@ -204,20 +206,24 @@
                         x:Name="BrowseUpdateButton"
                         Grid.Row="0"
                         Grid.Column="2"
-                        Margin="6,0,0,0"
+                        Margin="5"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         Content="Open" />
 
                     <!--  SxS folder  -->
                     <TextBlock
                         Grid.Row="1"
                         Grid.Column="0"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Text="SxS folder:" />
                     <TextBox
                         x:Name="SxSPathTextBox"
                         Grid.Row="1"
                         Grid.Column="1"
-                        Margin="6,6"
+                        Margin="5"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
                         IsReadOnly="True"
                         IsReadOnlyCaretVisible="True" />
@@ -225,20 +231,24 @@
                         x:Name="BrowseSxSButton"
                         Grid.Row="1"
                         Grid.Column="2"
-                        Margin="6,6,0,0"
+                        Margin="5"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         Content="Open" />
 
                     <!--  Output folder  -->
                     <TextBlock
                         Grid.Row="2"
                         Grid.Column="0"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Text="Output folder:" />
                     <TextBox
                         x:Name="OutputPathTextBox"
                         Grid.Row="2"
                         Grid.Column="1"
-                        Margin="6,6"
+                        Margin="5"
+                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
                         IsReadOnly="True"
                         IsReadOnlyCaretVisible="True" />
@@ -246,7 +256,9 @@
                         x:Name="BrowseOutputButton"
                         Grid.Row="2"
                         Grid.Column="2"
-                        Margin="6,6,0,0"
+                        Margin="5"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         Content="Open" />
 
                     <!--  Options  -->
