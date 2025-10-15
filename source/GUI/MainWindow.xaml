@@ -153,6 +153,7 @@
             </Grid>
         </GroupBox>
 
+        <!-- Update Configuration -->
         <GroupBox Header="Update Configuration"
                   Grid.Row="2"
                   Margin="0,0,0,12">
@@ -169,6 +170,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Update folder -->
                 <TextBlock Grid.Row="0"
                            Grid.Column="0"
                            VerticalAlignment="Center"
@@ -186,6 +188,7 @@
                         Content="Open"
                         Margin="6,0,0,0"/>
 
+                <!-- SxS folder -->
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
                            VerticalAlignment="Center"
@@ -203,6 +206,7 @@
                         Content="Open"
                         Margin="6,6,0,0"/>
 
+                <!-- Output folder -->
                 <TextBlock Grid.Row="2"
                            Grid.Column="0"
                            VerticalAlignment="Center"
@@ -220,6 +224,7 @@
                         Content="Open"
                         Margin="6,6,0,0"/>
 
+                <!-- Options -->
                 <StackPanel Grid.Row="3"
                             Grid.Column="0"
                             Grid.ColumnSpan="3"
