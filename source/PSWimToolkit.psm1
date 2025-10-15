@@ -1,4 +1,20 @@
-. (Join-Path -Path $PSScriptRoot -ChildPath 'Private\00.Initialize-ToolkitEnvironment.ps1')
+. (Join-Path -Path $PSScriptRoot -ChildPath 'Private\Bootstrap\00.Initialize-ToolkitEnvironment.ps1')
+
+$privateRoot = Join-Path -Path $PSScriptRoot -ChildPath 'Private'
+$bootstrapScript = Get-Item -LiteralPath (Join-Path -Path $privateRoot -ChildPath 'Bootstrap\00.Initialize-ToolkitEnvironment.ps1') -ErrorAction SilentlyContinue
+
+$loggingScripts = Get-ChildItem -Path (Join-Path -Path $privateRoot -ChildPath 'Logging') -Filter '*.ps1' -File -ErrorAction SilentlyContinue | Sort-Object -Property Name
+foreach ($file in $loggingScripts) {
+    . $file.FullName
+}
+
+$preLoadedPrivateScripts = @()
+if ($bootstrapScript) {
+    $preLoadedPrivateScripts += $bootstrapScript.FullName
+}
+if ($loggingScripts) {
+    $preLoadedPrivateScripts += ($loggingScripts | ForEach-Object { $_.FullName })
+}
 
 $moduleLoadStart = Get-Date
 
@@ -12,13 +28,14 @@ try {
         Write-ToolkitLog -Message "Loaded class: $($file.BaseName)" -Type Debug -Source 'PSWimToolkit'
     }
 
-    $privateFunctions = Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Private') -Filter '*.ps1' -File -ErrorAction SilentlyContinue | Sort-Object -Property Name
+    $privateFunctions = Get-ChildItem -Path $privateRoot -Filter '*.ps1' -File -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { -not ($preLoadedPrivateScripts -contains $_.FullName) } |
+        Sort-Object -Property DirectoryName, Name
+
     Write-ToolkitLog -Message "Loading $($privateFunctions.Count) private function(s)..." -Type Debug -Source 'PSWimToolkit'
     foreach ($file in $privateFunctions) {
-        if ($file.Name -ne '00.Initialize-ToolkitEnvironment.ps1') {
-            . $file.FullName
-            Write-ToolkitLog -Message "Loaded private function: $($file.BaseName)" -Type Debug -Source 'PSWimToolkit'
-        }
+        . $file.FullName
+        Write-ToolkitLog -Message "Loaded private function: $($file.BaseName)" -Type Debug -Source 'PSWimToolkit'
     }
 
     $publicFunctions = Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath 'Public') -Filter '*.ps1' -File -ErrorAction SilentlyContinue | Sort-Object -Property Name
