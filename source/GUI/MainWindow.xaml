@@ -65,7 +65,8 @@
                     </Grid.RowDefinitions>
                     <StackPanel
                         Grid.Row="0"
-                        HorizontalAlignment="Left"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
                         Orientation="Horizontal">
 
                         <!--  Add WIM Buttons  -->
