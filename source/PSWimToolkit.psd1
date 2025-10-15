@@ -70,17 +70,7 @@ RequiredAssemblies = @('Types\netstandard2.0\HtmlAgilityPack.dll')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
-    'Find-WindowsUpdate'
-    'Save-WindowsUpdate'
-    'Get-WimImageInfo'
-    'Get-WimApplicableUpdate'
-    'Get-ToolkitCatalogFacet'
-    'Add-UpdateToWim'
-    'Update-WimImage'
-    'Enable-WimFeature'
-    'Start-ParallelProvisioning'
     'Start-PSWimToolkit'
-    'Import-WimFromIso'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
