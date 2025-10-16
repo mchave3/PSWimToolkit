@@ -392,26 +392,32 @@
                 </Grid>
             </GroupBox>
 
+            <!--  Progress Viewer  -->
             <GroupBox
                 Grid.Row="4"
-                Margin="0,0,0,12"
+                Margin="5"
                 Header="Progress">
-                <Grid Margin="0,4,0,4">
+                <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
+
+                    <!--  Overall Progress Bar  -->
                     <ProgressBar
                         x:Name="OverallProgressBar"
                         Grid.Row="0"
                         Height="22"
+                        Margin="5"
                         IsIndeterminate="False"
                         Maximum="100"
                         Minimum="0" />
+
+                    <!--  Progress List  -->
                     <ListView
                         x:Name="ProgressList"
                         Grid.Row="1"
-                        Margin="0,10,0,0">
+                        Margin="5">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn
