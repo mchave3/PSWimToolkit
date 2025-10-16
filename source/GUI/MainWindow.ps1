@@ -26,16 +26,39 @@ function Show-PSWimToolkitMainWindow {
     $window = [Windows.Markup.XamlReader]::Load($xamlReader)
 
     $stylesPath = Join-Path -Path $PSScriptRoot -ChildPath 'Styles.xaml'
+    $stylesXmlDocument = $null
+    $stylesLoadWarningEmitted = $false
     if (Test-Path -LiteralPath $stylesPath -PathType Leaf) {
         try {
-            [xml]$stylesContent = Get-Content -LiteralPath $stylesPath -Raw
-            $stylesReader = New-Object System.Xml.XmlNodeReader $stylesContent
-            $stylesDictionary = [Windows.Markup.XamlReader]::Load($stylesReader)
-            $window.Resources.MergedDictionaries.Add($stylesDictionary)
+            [xml]$stylesXmlDocument = Get-Content -LiteralPath $stylesPath -Raw
         } catch {
+            $stylesLoadWarningEmitted = $true
             Write-Warning "Failed to load GUI styles: $($_.Exception.Message)"
         }
     }
+
+    function Add-SharedGuiStyles {
+        param(
+            [System.Windows.FrameworkElement] $Target
+        )
+
+        if (-not $Target -or -not $stylesXmlDocument) {
+            return
+        }
+
+        try {
+            $stylesReader = New-Object System.Xml.XmlNodeReader $stylesXmlDocument
+            $stylesDictionary = [Windows.Markup.XamlReader]::Load($stylesReader)
+            $Target.Resources.MergedDictionaries.Add($stylesDictionary)
+        } catch {
+            if (-not $stylesLoadWarningEmitted) {
+                Write-Warning "Failed to load GUI styles: $($_.Exception.Message)"
+                Set-Variable -Name stylesLoadWarningEmitted -Value $true -Scope 1
+            }
+        }
+    }
+
+    Add-SharedGuiStyles -Target $window
 
     $controls = @{
         OpenConfigMenuItem    = $window.FindName('OpenConfigMenuItem')
@@ -560,6 +583,7 @@ function Show-PSWimToolkitMainWindow {
         $detailsReader = New-Object System.Xml.XmlNodeReader $detailsXml
         $dialog = [Windows.Markup.XamlReader]::Load($detailsReader)
         $dialog.Owner = $window
+        Add-SharedGuiStyles -Target $dialog
 
         $detailsControls = @{
             HeaderText     = $dialog.FindName('HeaderText')
@@ -641,6 +665,7 @@ function Show-PSWimToolkitMainWindow {
         $catalogReader = New-Object System.Xml.XmlNodeReader $catalogXml
         $dialog = [Windows.Markup.XamlReader]::Load($catalogReader)
         $dialog.Owner = $window
+        Add-SharedGuiStyles -Target $dialog
 
         $catalogControls = @{
             SearchTextBox           = $dialog.FindName('SearchTextBox')
@@ -907,6 +932,7 @@ function Show-PSWimToolkitMainWindow {
         $dialogReader = New-Object System.Xml.XmlNodeReader $dialogXml
         $dialog = [Windows.Markup.XamlReader]::Load($dialogReader)
         $dialog.Owner = $window
+        Add-SharedGuiStyles -Target $dialog
 
         $detectControls = @{
             DownloadPathTextBox             = $dialog.FindName('DownloadPathTextBox')
