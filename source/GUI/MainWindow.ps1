@@ -15,6 +15,7 @@ function Show-PSWimToolkitMainWindow {
 
     Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
     Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Windows.Controls.Ribbon
 
     $xamlPath = Join-Path -Path $PSScriptRoot -ChildPath 'MainWindow.xaml'
     if (-not (Test-Path -LiteralPath $xamlPath -PathType Leaf)) {
