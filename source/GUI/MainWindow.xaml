@@ -18,7 +18,7 @@
         </Style>
     </Window.Style>
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <Grid Margin="12">
+        <Grid Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -28,7 +28,8 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Menu Grid.Row="0" Margin="0,0,0,12">
+            <!--  Menu Bar  -->
+            <Menu Grid.Row="0" Margin="5">
                 <MenuItem Header="_File">
                     <MenuItem x:Name="OpenConfigMenuItem" Header="_Open Config..." />
                     <MenuItem x:Name="SaveConfigMenuItem" Header="_Save Config..." />
@@ -58,7 +59,7 @@
                 Grid.Row="1"
                 Margin="5"
                 Header="WIM Management">
-                <Grid>
+                <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -326,44 +327,49 @@
                 </Grid>
             </GroupBox>
 
+            <!--  Provisioning Control  -->
             <GroupBox
                 Grid.Row="3"
-                Margin="0,0,0,12"
+                Margin="5"
                 Header="Provisioning Control">
-                <Grid Margin="0,4,0,4">
+                <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
+                    <!--  Start/Stop Buttons  -->
                     <StackPanel
                         Grid.Row="0"
                         HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
                         Orientation="Horizontal">
                         <Button
                             x:Name="StartButton"
-                            Margin="0,0,12,0"
+                            Margin="5"
                             Content="Start Provisioning" />
                         <Button
                             x:Name="StopButton"
-                            Margin="0,0,12,0"
+                            Margin="5"
                             Content="Stop"
                             IsEnabled="False" />
                     </StackPanel>
 
+                    <!--  Throttle Slider  -->
                     <StackPanel
                         Grid.Row="1"
-                        Margin="0,10,0,0"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
                         <TextBlock
-                            Margin="0,0,8,0"
+                            Margin="5"
                             VerticalAlignment="Center"
                             Text="Throttle limit:" />
                         <Slider
                             x:Name="ThrottleSlider"
                             Width="200"
+                            VerticalAlignment="Center"
                             IsSnapToTickEnabled="True"
                             Maximum="20"
                             Minimum="1"
@@ -371,15 +377,16 @@
                             Value="10" />
                         <TextBlock
                             x:Name="ThrottleValueText"
-                            Margin="10,0,0,0"
+                            Margin="5"
                             VerticalAlignment="Center"
                             Text="10" />
                     </StackPanel>
 
+                    <!--  Status TextBlock  -->
                     <TextBlock
                         x:Name="StatusTextBlock"
                         Grid.Row="2"
-                        Margin="0,12,0,0"
+                        Margin="5"
                         Foreground="#2B579A"
                         Text="Ready" />
                 </Grid>
