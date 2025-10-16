@@ -28,9 +28,6 @@
         <r:Ribbon Grid.Row="0">
             <r:Ribbon.ApplicationMenu>
                 <r:RibbonApplicationMenu>
-                    <r:RibbonApplicationMenuItem x:Name="OpenConfigMenuItem" Header="Open Config..." />
-                    <r:RibbonApplicationMenuItem x:Name="SaveConfigMenuItem" Header="Save Config..." />
-                    <r:RibbonSeparator />
                     <r:RibbonApplicationMenuItem x:Name="ExitMenuItem" Header="Exit" />
                 </r:RibbonApplicationMenu>
             </r:Ribbon.ApplicationMenu>

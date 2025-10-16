@@ -62,8 +62,6 @@ function Show-PSWimToolkitMainWindow {
     Add-SharedGuiStyles -Target $window
 
     $controls = @{
-        OpenConfigMenuItem    = $window.FindName('OpenConfigMenuItem')
-        SaveConfigMenuItem    = $window.FindName('SaveConfigMenuItem')
         ExitMenuItem          = $window.FindName('ExitMenuItem')
         DownloadUpdatesMenuItem = $window.FindName('DownloadUpdatesMenuItem')
         ClearLogsMenuItem     = $window.FindName('ClearLogsMenuItem')
@@ -490,77 +488,6 @@ function Show-PSWimToolkitMainWindow {
         }
 
         Set-Content -LiteralPath $Destination -Value $lines -Encoding UTF8
-    }
-
-    function Load-Configuration {
-        param (
-            [Parameter(Mandatory)]
-            [string] $Path
-        )
-
-        try {
-            $config = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -Depth 6 -ErrorAction Stop
-        } catch {
-            [System.Windows.MessageBox]::Show("Failed to load configuration: $($_.Exception.Message)", 'PSWimToolkit', 'OK', 'Error') | Out-Null
-            return
-        }
-
-        $wimItems.Clear()
-        if ($config.WimFiles) {
-            foreach ($entry in $config.WimFiles) {
-                if (-not $entry.Path) { continue }
-                $indexValue = if ($entry.Index) { [int]$entry.Index } else { 1 }
-                $item = New-WimItem -Path $entry.Path -Index $indexValue
-                Refresh-WimItemDetails -Item $item -Force
-                $wimItems.Add($item)
-            }
-        }
-        $controls.WimGrid.Items.Refresh()
-        $controls.ProgressList.Items.Refresh()
-
-        if ($config.UpdatePath) { $controls.UpdatePathTextBox.Text = $config.UpdatePath } else { $controls.UpdatePathTextBox.Text = $state.UpdatesRoot }
-        if ($config.SxSPath) { $controls.SxSPathTextBox.Text = $config.SxSPath } else { $controls.SxSPathTextBox.Text = $state.SxSRoot }
-        if ($config.OutputPath) { $controls.OutputPathTextBox.Text = $config.OutputPath } else { $controls.OutputPathTextBox.Text = $state.OutputRoot }
-
-        $controls.EnableNetFxCheckBox.IsChecked = $config.EnableNetFx3
-        $controls.ForceCheckBox.IsChecked = $config.Force
-        $controls.VerboseLogCheckBox.IsChecked = $config.Verbose
-        $controls.IncludePreviewCheckBox.IsChecked = $config.IncludePreview
-
-        if ($config.ThrottleLimit) {
-            $controls.ThrottleSlider.Value = [Math]::Min([Math]::Max([double]$config.ThrottleLimit, $controls.ThrottleSlider.Minimum), $controls.ThrottleSlider.Maximum)
-        }
-
-        Refresh-ThrottleText -Value $controls.ThrottleSlider.Value
-        Update-Status -Message "Configuration loaded from $Path"
-    }
-
-    function Save-Configuration {
-        param (
-            [Parameter(Mandatory)]
-            [string] $Path
-        )
-
-        $config = [pscustomobject]@{
-            UpdatePath    = $controls.UpdatePathTextBox.Text
-            SxSPath       = $controls.SxSPathTextBox.Text
-            OutputPath    = $controls.OutputPathTextBox.Text
-            EnableNetFx3  = [bool]$controls.EnableNetFxCheckBox.IsChecked
-            Force         = [bool]$controls.ForceCheckBox.IsChecked
-            Verbose       = [bool]$controls.VerboseLogCheckBox.IsChecked
-            IncludePreview = [bool]$controls.IncludePreviewCheckBox.IsChecked
-            ThrottleLimit = [int][Math]::Round($controls.ThrottleSlider.Value)
-            WimFiles      = $wimItems | ForEach-Object {
-                [pscustomobject]@{
-                    Path  = $_.Path
-                    Index = $_.Index
-                }
-            }
-        }
-
-        $json = $config | ConvertTo-Json -Depth 6
-        Set-Content -LiteralPath $Path -Value $json -Encoding UTF8
-        Update-Status -Message "Configuration saved to $Path"
     }
 
     function Show-WimDetailsDialog {
@@ -1208,8 +1135,6 @@ function Show-PSWimToolkitMainWindow {
             [bool] $Enabled
         )
 
-        $controls.OpenConfigMenuItem.IsEnabled = $Enabled
-        $controls.SaveConfigMenuItem.IsEnabled = $Enabled
         $controls.DownloadUpdatesMenuItem.IsEnabled = $Enabled
         $controls.ClearLogsMenuItem.IsEnabled = $Enabled
         $controls.ExportLogsMenuItem.IsEnabled = $Enabled
@@ -1633,23 +1558,6 @@ function Show-PSWimToolkitMainWindow {
 
     $controls.SearchCatalogButton.Add_Click({
         Show-CatalogDialog
-    })
-
-    $controls.OpenConfigMenuItem.Add_Click({
-        $dialog = [Microsoft.Win32.OpenFileDialog]::new()
-        $dialog.Filter = 'Configuration (*.json)|*.json|All files (*.*)|*.*'
-        if ($dialog.ShowDialog()) {
-            Load-Configuration -Path $dialog.FileName
-        }
-    })
-
-    $controls.SaveConfigMenuItem.Add_Click({
-        $dialog = [Microsoft.Win32.SaveFileDialog]::new()
-        $dialog.Filter = 'Configuration (*.json)|*.json|All files (*.*)|*.*'
-        $dialog.FileName = 'PSWimToolkitProvisioning.json'
-        if ($dialog.ShowDialog()) {
-            Save-Configuration -Path $dialog.FileName
-        }
     })
 
     $controls.ExitMenuItem.Add_Click({
