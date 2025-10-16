@@ -12,7 +12,7 @@
             <Style.Triggers>
                 <Trigger Property="WindowState" Value="Normal">
                     <Setter Property="MinWidth" Value="1000" />
-                    <Setter Property="MinHeight" Value="1000" />
+                    <Setter Property="MinHeight" Value="1050" />
                 </Trigger>
             </Style.Triggers>
         </Style>
