@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterOwner"
         Background="#FFFFFF"
         FontFamily="Segoe UI">
-    <Grid Margin="12">
+    <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
