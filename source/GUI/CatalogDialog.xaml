@@ -114,68 +114,90 @@
         </Grid>
 
         <!--  Additional options  -->
-        <WrapPanel Grid.Row="2" Margin="0,0,0,8">
-            <CheckBox
-                x:Name="AllPagesCheckBox"
-                Margin="0,0,12,6"
-                Content="All pages" />
-            <CheckBox
-                x:Name="IncludePreviewCheckBox"
-                Margin="0,0,12,6"
-                Content="Include preview" />
-            <CheckBox
-                x:Name="IncludeDynamicCheckBox"
-                Margin="0,0,12,6"
-                Content="Include dynamic" />
-            <CheckBox
-                x:Name="GetFrameworkCheckBox"
-                Margin="0,0,12,6"
-                Content="Only .NET Framework" />
-            <CheckBox
-                x:Name="ExcludeFrameworkCheckBox"
-                Margin="0,0,12,6"
-                Content="Exclude .NET Framework" />
-            <CheckBox
-                x:Name="StrictCheckBox"
-                Margin="0,0,12,6"
-                Content="Strict phrase" />
-            <CheckBox
-                x:Name="IncludeFileNamesCheckBox"
-                Margin="0,0,12,6"
-                Content="Include filenames" />
-            <TextBlock
-                Margin="16,0,4,0"
-                VerticalAlignment="Center"
-                Text="Last days:" />
-            <TextBox
-                x:Name="LastDaysTextBox"
-                Width="60"
-                Margin="0,0,12,0" />
-            <TextBlock
-                Margin="0,0,4,0"
-                VerticalAlignment="Center"
-                Text="Min size:" />
-            <TextBox
-                x:Name="MinSizeTextBox"
-                Width="60"
-                Margin="0,0,8,0" />
-            <TextBlock
-                Margin="0,0,4,0"
-                VerticalAlignment="Center"
-                Text="Max size:" />
-            <TextBox
-                x:Name="MaxSizeTextBox"
-                Width="60"
-                Margin="0,0,8,0" />
-            <ComboBox x:Name="SizeUnitComboBox" Width="80">
-                <ComboBoxItem Content="MB" IsSelected="True" />
-                <ComboBoxItem Content="GB" />
-            </ComboBox>
-        </WrapPanel>
+        <Grid Grid.Row="2" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
+            <!--  Checkboxes  -->
+            <UniformGrid
+                Grid.Column="0"
+                Margin="5"
+                Columns="2">
+                <CheckBox
+                    x:Name="AllPagesCheckBox"
+                    Margin="5"
+                    Content="All pages" />
+                <CheckBox
+                    x:Name="IncludePreviewCheckBox"
+                    Margin="5"
+                    Content="Include preview" />
+                <CheckBox
+                    x:Name="IncludeDynamicCheckBox"
+                    Margin="5"
+                    Content="Include dynamic" />
+                <CheckBox
+                    x:Name="GetFrameworkCheckBox"
+                    Margin="5"
+                    Content="Only .NET Framework" />
+                <CheckBox
+                    x:Name="ExcludeFrameworkCheckBox"
+                    Margin="5"
+                    Content="Exclude .NET Framework" />
+                <CheckBox
+                    x:Name="StrictCheckBox"
+                    Margin="5"
+                    Content="Strict phrase" />
+                <CheckBox
+                    x:Name="IncludeFileNamesCheckBox"
+                    Margin="5"
+                    Content="Include filenames" />
+            </UniformGrid>
+
+            <!--  Size and date filters  -->
+            <StackPanel
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <StackPanel Margin="5">
+                    <TextBlock Margin="5" Text="Last days:" />
+                    <TextBox
+                        x:Name="LastDaysTextBox"
+                        Width="60"
+                        Margin="5" />
+                </StackPanel>
+                <StackPanel Margin="5">
+                    <TextBlock Margin="5" Text="Min size:" />
+                    <TextBox
+                        x:Name="MinSizeTextBox"
+                        Width="60"
+                        Margin="5" />
+                </StackPanel>
+                <StackPanel Margin="5">
+                    <TextBlock Margin="5" Text="Max size:" />
+                    <TextBox
+                        x:Name="MaxSizeTextBox"
+                        Width="60"
+                        Margin="5" />
+                </StackPanel>
+                <StackPanel Margin="5" VerticalAlignment="Bottom">
+                    <ComboBox
+                        x:Name="SizeUnitComboBox"
+                        Width="80"
+                        Margin="5">
+                        <ComboBoxItem Content="MB" IsSelected="True" />
+                        <ComboBoxItem Content="GB" />
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!--  Results list  -->
         <ListView
             x:Name="ResultsList"
             Grid.Row="3"
+            Margin="5"
             SelectionMode="Extended">
             <ListView.View>
                 <GridView>
@@ -199,6 +221,7 @@
             </ListView.View>
         </ListView>
 
+        <!--  Status and buttons  -->
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -207,18 +230,22 @@
             <TextBlock
                 x:Name="CatalogStatusText"
                 Grid.Column="0"
+                Margin="5"
                 VerticalAlignment="Center"
                 Foreground="#2B579A" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button
                     x:Name="DownloadButton"
-                    Margin="0,0,10,0"
+                    Margin="5"
                     Content="Download Selected" />
                 <Button
                     x:Name="CopyButton"
-                    Margin="0,0,10,0"
+                    Margin="5"
                     Content="Copy Details" />
-                <Button x:Name="CloseButton" Content="Close" />
+                <Button
+                    x:Name="CloseButton"
+                    Margin="5"
+                    Content="Close" />
             </StackPanel>
         </Grid>
     </Grid>
