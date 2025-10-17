@@ -53,6 +53,7 @@ function Get-ToolkitCatalogData {
             [pscustomobject]@{
                 Name     = 'Windows 11'
                 Releases = @(
+                    [pscustomobject]@{ Name = '25H2'; Query = 'Windows 11 25H2'; Architectures = @('x64', 'arm64'); Build = 26200 }
                     [pscustomobject]@{ Name = '24H2'; Query = 'Windows 11 24H2'; Architectures = @('x64', 'arm64'); Build = 26100 }
                     [pscustomobject]@{ Name = '23H2'; Query = 'Windows 11 23H2'; Architectures = @('x64', 'arm64'); Build = 22631 }
                     [pscustomobject]@{ Name = '22H2'; Query = 'Windows 11 22H2'; Architectures = @('x64', 'arm64'); Build = 22621 }
@@ -66,15 +67,27 @@ function Get-ToolkitCatalogData {
                     [pscustomobject]@{ Name = '21H2'; Query = 'Windows 10 21H2'; Architectures = @('x64', 'x86', 'arm64'); Build = 19044 }
                     [pscustomobject]@{ Name = '21H1'; Query = 'Windows 10 21H1'; Architectures = @('x64', 'x86'); Build = 19043 }
                     [pscustomobject]@{ Name = '20H2'; Query = 'Windows 10 20H2'; Architectures = @('x64', 'x86'); Build = 19042 }
+                    [pscustomobject]@{ Name = '2004'; Query = 'Windows 10 2004'; Architectures = @('x64', 'x86'); Build = 19041 }
+                    [pscustomobject]@{ Name = '1909'; Query = 'Windows 10 1909'; Architectures = @('x64', 'x86'); Build = 18363 }
+                    [pscustomobject]@{ Name = '1903'; Query = 'Windows 10 1903'; Architectures = @('x64', 'x86'); Build = 18362 }
+                    [pscustomobject]@{ Name = '1809'; Query = 'Windows 10 1809'; Architectures = @('x64', 'x86'); Build = 17763 }
+                    [pscustomobject]@{ Name = '1803'; Query = 'Windows 10 1803'; Architectures = @('x64', 'x86'); Build = 17134 }
+                    [pscustomobject]@{ Name = '1709'; Query = 'Windows 10 1709'; Architectures = @('x64', 'x86'); Build = 16299 }
+                    [pscustomobject]@{ Name = '1703'; Query = 'Windows 10 1703'; Architectures = @('x64', 'x86'); Build = 15063 }
+                    [pscustomobject]@{ Name = '1607'; Query = 'Windows 10 1607'; Architectures = @('x64', 'x86'); Build = 14393 }
+                    [pscustomobject]@{ Name = '1511'; Query = 'Windows 10 1511'; Architectures = @('x64', 'x86'); Build = 10586 }
+                    [pscustomobject]@{ Name = '1507'; Query = 'Windows 10 1507'; Architectures = @('x64', 'x86'); Build = 10240 }
                 )
             }
             [pscustomobject]@{
                 Name     = 'Windows Server'
                 Releases = @(
-                    [pscustomobject]@{ Name = '2025'; Query = 'Windows Server 2025'; Architectures = @('x64'); Build = 26100 }
-                    [pscustomobject]@{ Name = '2022'; Query = 'Windows Server 2022'; Architectures = @('x64'); Build = 20348 }
-                    [pscustomobject]@{ Name = '2019'; Query = 'Windows Server 2019'; Architectures = @('x64'); Build = 17763 }
-                    [pscustomobject]@{ Name = '2016'; Query = 'Windows Server 2016'; Architectures = @('x64'); Build = 14393 }
+                    [pscustomobject]@{ Name = '2025'; Query = 'Windows Server 2025'; Architectures = @('x64', 'arm64'); Build = 26100 }
+                    [pscustomobject]@{ Name = '23H2'; Query = 'Windows Server 23H2'; Architectures = @('x64'); Build = 25398 }
+                    [pscustomobject]@{ Name = '2022'; Query = 'Windows Server 2022'; Architectures = @('x64', 'x86'); Build = 20348 }
+                    [pscustomobject]@{ Name = '20H2'; Query = 'Windows Server 20H2'; Architectures = @('x64', 'x86'); Build = 19042 }
+                    [pscustomobject]@{ Name = '2019'; Query = 'Windows Server 2019'; Architectures = @('x64', 'x86'); Build = 17763 }
+                    [pscustomobject]@{ Name = '2016'; Query = 'Windows Server 2016'; Architectures = @('x64', 'x86'); Build = 14393 }
                 )
             }
         )
