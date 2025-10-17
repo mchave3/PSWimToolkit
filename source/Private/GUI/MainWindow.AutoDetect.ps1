@@ -140,9 +140,11 @@ function Show-AutoDetectDialog {
             [psobject] $Context,
 
             [Parameter(Mandatory)]
+            [AllowEmptyCollection()]
             [psobject[]] $Items,
 
             [Parameter(Mandatory)]
+            [AllowEmptyCollection()]
             [System.Collections.ObjectModel.ObservableCollection[psobject]] $Results,
 
             [Parameter(Mandatory)]
