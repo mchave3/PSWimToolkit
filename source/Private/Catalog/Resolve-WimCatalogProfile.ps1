@@ -38,12 +38,8 @@ function Resolve-WimCatalogProfile {
     foreach ($os in $catalogData.OperatingSystems) {
         foreach ($release in $os.Releases) {
             $buildMatch = $false
-            if ($buildNumber) {
-                if ($release.BuildMax) {
-                    $buildMatch = ($buildNumber -ge $release.BuildMin) -and ($buildNumber -le $release.BuildMax)
-                } else {
-                    $buildMatch = $buildNumber -ge $release.BuildMin
-                }
+            if ($buildNumber -and ($null -ne $release.Build)) {
+                $buildMatch = $buildNumber -eq $release.Build
             }
 
             $labelMatch = $false
@@ -79,7 +75,7 @@ function Resolve-WimCatalogProfile {
         }
 
         $fallbackOs = $catalogData.OperatingSystems | Where-Object { $_.Name -eq $fallbackName } | Select-Object -First 1
-        $fallbackRelease = $fallbackOs.Releases | Sort-Object -Property BuildMin -Descending | Select-Object -First 1
+        $fallbackRelease = $fallbackOs.Releases | Sort-Object -Property Build -Descending | Select-Object -First 1
         $selection = [pscustomobject]@{
             OperatingSystem = $fallbackOs
             Release         = $fallbackRelease

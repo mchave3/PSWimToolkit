@@ -35,7 +35,7 @@ function Get-ToolkitCatalogFacet {
                 $osEntry = $data.OperatingSystems | Where-Object { $_.Name -eq $OperatingSystem } | Select-Object -First 1
                 if ($osEntry) {
                     Write-ToolkitLog -Message "Returning $($osEntry.Releases.Count) release(s) for $OperatingSystem" -Type Info -Source 'Get-ToolkitCatalogFacet'
-                    return $osEntry.Releases | Select-Object -Property Name, Query, Architectures, BuildMin, BuildMax
+                    return $osEntry.Releases | Select-Object -Property Name, Query, Architectures, Build
                 }
                 Write-ToolkitLog -Message "No catalog facet releases found for operating system '$OperatingSystem'." -Type Warning -Source 'Get-ToolkitCatalogFacet'
                 return @()
@@ -49,8 +49,7 @@ function Get-ToolkitCatalogFacet {
                         Name            = $release.Name
                         Query           = $release.Query
                         Architectures   = $release.Architectures
-                        BuildMin        = $release.BuildMin
-                        BuildMax        = $release.BuildMax
+                        Build           = $release.Build
                     }
                 }
             }
