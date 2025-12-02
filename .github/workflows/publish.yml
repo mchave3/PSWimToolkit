@@ -1,0 +1,108 @@
+name: Publish Module
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      moduleVersion:
+        description: 'Version to publish (falls back to tag or manifest)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    name: Build & Package
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve module version
+        shell: pwsh
+        run: |
+          $inputVersion = '${{ github.event.inputs.moduleVersion }}'
+          if (-not $inputVersion) {
+            if ('${{ github.ref_type }}' -eq 'tag') {
+              $inputVersion = '${{ github.ref_name }}' -replace '^v'
+            }
+          }
+
+          if ($inputVersion) {
+            "ModuleVersion=$inputVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
+            Write-Host "Using module version $inputVersion"
+          }
+          else {
+            Write-Host 'Using manifest/GitVersion defaults for ModuleVersion.'
+          }
+
+      - name: Restore, build, and pack
+        shell: pwsh
+        run: ./build.ps1 -ResolveDependency -Tasks pack
+        env:
+          ModuleVersion: ${{ env.ModuleVersion }}
+
+      - name: Publish build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: output
+          path: output/
+          if-no-files-found: error
+
+  test:
+    name: Test on ${{ matrix.os }}
+    needs: pack
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: output
+          path: output
+
+      - name: Run tests
+        shell: pwsh
+        run: ./build.ps1 -ResolveDependency -Tasks test
+
+  publish:
+    name: Publish release
+    needs: test
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: output
+          path: output
+
+      - name: Publish to GitHub Releases and PowerShell Gallery
+        shell: pwsh
+        run: ./build.ps1 -ResolveDependency -Tasks publish
+        env:
+          GitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GalleryApiToken: ${{ secrets.PSGALLERY_API_KEY }}
+          ReleaseBranch: ${{ github.event.repository.default_branch }}
+          MainGitBranch: ${{ github.event.repository.default_branch }}
