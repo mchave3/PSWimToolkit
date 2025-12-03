@@ -1,21 +1,31 @@
-name: Publish Module
+name: Publish to PowerShell Gallery
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
-      moduleVersion:
-        description: 'Version to publish (falls back to tag or manifest)'
+      force:
+        description: 'Skip gallery version check (use only when republishing the same version).'
         required: false
+        default: false
+        type: boolean
+      whatif:
+        description: 'Run the publish command in WhatIf mode without pushing to the gallery.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  MODULE_NAME: PSWimToolkit
+
+defaults:
+  run:
+    shell: pwsh
 
 jobs:
-  pack:
-    name: Build & Package
+  publish:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -23,86 +33,89 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve module version
-        shell: pwsh
+      - name: Restore build dependencies
         run: |
-          $inputVersion = '${{ github.event.inputs.moduleVersion }}'
-          if (-not $inputVersion) {
-            if ('${{ github.ref_type }}' -eq 'tag') {
-              $inputVersion = '${{ github.ref_name }}' -replace '^v'
-            }
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          ./build.ps1 -ResolveDependency -Tasks noop
+
+      - name: Build module
+        run: ./build.ps1 -Tasks build -AutoRestore
+
+      - name: Publish to PowerShell Gallery
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+          FORCE_PUBLISH: ${{ inputs.force }}
+          WHATIF: ${{ inputs.whatif }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not $env:PSGALLERY_API_KEY) {
+              throw 'PSGALLERY_API_KEY secret is not defined.'
           }
 
-          if ($inputVersion) {
-            "ModuleVersion=$inputVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
-            Write-Host "Using module version $inputVersion"
+          $moduleName = $env:MODULE_NAME
+          $baseModulePath = Join-Path $env:GITHUB_WORKSPACE "output/module/$moduleName"
+
+          if (-not (Test-Path $baseModulePath)) {
+              throw "Module output path not found: $baseModulePath. Ensure the build step completed."
+          }
+
+          $versionDirs = Get-ChildItem -Path $baseModulePath -Directory |
+              Where-Object { $_.Name -match '^\d+(\.\d+){2,3}$' } |
+              Sort-Object { [version]$_.Name } -Descending
+
+          if (-not $versionDirs) {
+              throw "No version directories found under $baseModulePath. Run the build first."
+          }
+
+          $modulePath = $versionDirs[0].FullName
+          $manifestPath = Join-Path $modulePath "$moduleName.psd1"
+
+          if (-not (Test-Path $manifestPath)) {
+              $nestedPath = Join-Path $modulePath $moduleName
+              $nestedManifest = Join-Path $nestedPath "$moduleName.psd1"
+
+              if (Test-Path $nestedManifest) {
+                  $modulePath = $nestedPath
+                  $manifestPath = $nestedManifest
+              }
+          }
+
+          if (-not (Test-Path $manifestPath)) {
+              throw "Could not locate $moduleName.psd1 under $modulePath."
+          }
+
+          $manifest = Test-ModuleManifest -Path $manifestPath
+          Write-Host "Publishing $moduleName v$($manifest.Version) from $modulePath"
+
+          $forcePublish = [System.Convert]::ToBoolean($env:FORCE_PUBLISH)
+          $whatIf = [System.Convert]::ToBoolean($env:WHATIF)
+
+          $existingVersions = Find-Module -Name $moduleName -Repository PSGallery -AllVersions -ErrorAction SilentlyContinue
+          if ($existingVersions) {
+              $latestGallery = ($existingVersions | Sort-Object Version -Descending)[0].Version
+              Write-Host "Latest version on PSGallery: $latestGallery"
+
+              if ([version]$latestGallery -ge [version]$manifest.Version -and -not $forcePublish) {
+                  throw "Version $($manifest.Version) is not greater than gallery version $latestGallery. Re-run with the 'force' input to override this check."
+              }
+          }
+
+          $publishParams = @{
+              Path       = $modulePath
+              Repository = 'PSGallery'
+              Verbose    = $true
+          }
+
+          if ($whatIf) {
+              $publishParams['WhatIf'] = $true
+          }
+
+          if (Get-Command -Name Publish-PSResource -ErrorAction SilentlyContinue) {
+              $publishParams['ApiKey'] = $env:PSGALLERY_API_KEY
+              Publish-PSResource @publishParams
           }
           else {
-            Write-Host 'Using manifest/GitVersion defaults for ModuleVersion.'
+              $publishParams['NuGetApiKey'] = $env:PSGALLERY_API_KEY
+              Publish-Module @publishParams
           }
-
-      - name: Restore, build, and pack
-        shell: pwsh
-        run: ./build.ps1 -ResolveDependency -Tasks pack
-        env:
-          ModuleVersion: ${{ env.ModuleVersion }}
-
-      - name: Publish build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: output
-          path: output/
-          if-no-files-found: error
-
-  test:
-    name: Test on ${{ matrix.os }}
-    needs: pack
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: output
-          path: output
-
-      - name: Run tests
-        shell: pwsh
-        run: ./build.ps1 -ResolveDependency -Tasks test
-
-  publish:
-    name: Publish release
-    needs: test
-    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: output
-          path: output
-
-      - name: Publish to GitHub Releases and PowerShell Gallery
-        shell: pwsh
-        run: ./build.ps1 -ResolveDependency -Tasks publish
-        env:
-          GitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GalleryApiToken: ${{ secrets.PSGALLERY_API_KEY }}
-          ReleaseBranch: ${{ github.event.repository.default_branch }}
-          MainGitBranch: ${{ github.event.repository.default_branch }}
