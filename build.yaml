@@ -75,10 +75,10 @@ BuildWorkflow:
   #merge:
     #- Merge_CodeCoverage_Files
 
-  publish:
-    - Publish_Release_To_GitHub # Runs first, if token is expired it will fail early
-    # - Publish_GitHub_Wiki_Content
-    - publish_module_to_gallery
+  # NOTE: Publishing is handled by GitHub Actions workflow (.github/workflows/publish.yml)
+  # Use `./build.ps1 -Tasks publish` only for local testing with -WhatIf
+  # publish:
+  #   - publish_module_to_gallery
 
 ####################################################
 #       PESTER  Configuration                      #
