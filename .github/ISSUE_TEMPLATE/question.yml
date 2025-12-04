@@ -1,0 +1,38 @@
+name: ❓ Question
+description: Ask a question about using PSWimToolkit.
+labels: [question]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Question about PSWimToolkit
+
+        Before asking, please check:
+        - 📖 [README](https://github.com/mchave3/PSWimToolkit/blob/main/README.md)
+        - 📚 [Documentation](https://github.com/mchave3/PSWimToolkit/tree/main/docs)
+        - 🔍 [Existing issues](https://github.com/mchave3/PSWimToolkit/issues)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any additional context that might help us answer your question.
+    validations:
+      required: false
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: What have you already tried or looked at?
+    validations:
+      required: false

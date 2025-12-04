@@ -1,0 +1,56 @@
+name: 📚 Documentation
+description: Report missing, incorrect, or unclear documentation.
+labels: [documentation]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Documentation feedback
+
+        Help us improve the documentation for PSWimToolkit.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Documentation issue type
+      options:
+        - Missing documentation
+        - Incorrect documentation
+        - Unclear / confusing documentation
+        - Typo / grammatical error
+        - Suggestion for improvement
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Where is the documentation issue? (URL, file path, or function name)
+      placeholder: "README.md, Start-PSWimToolkit, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the documentation issue or your suggestion.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested change
+      description: If you have a specific suggestion, please provide it.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to submit a PR to fix this documentation issue
