@@ -108,3 +108,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Author:** Mickael CHAVE
 
 **Project:** [https://github.com/mchave3/PSWimToolkit](https://github.com/mchave3/PSWimToolkit)
+
