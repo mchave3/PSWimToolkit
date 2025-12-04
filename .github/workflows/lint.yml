@@ -1,0 +1,155 @@
+name: Lint & Analyze
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'source/**'
+      - 'tests/**'
+      - '*.ps1'
+      - '*.psm1'
+      - '*.psd1'
+
+jobs:
+  lint:
+    name: PSScriptAnalyzer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        shell: pwsh
+        run: |
+          Write-Host "🔧 PowerShell Version: $($PSVersionTable.PSVersion)" -ForegroundColor Cyan
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Write-Host "📦 Installing PSScriptAnalyzer..." -ForegroundColor Yellow
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          Write-Host "✅ PSScriptAnalyzer installed" -ForegroundColor Green
+
+      - name: Run PSScriptAnalyzer on source
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Analyzing source files..." -ForegroundColor Yellow
+
+          $results = Invoke-ScriptAnalyzer -Path ./source -Recurse -Settings ./.vscode/analyzersettings.psd1 -Severity Error, Warning
+
+          if ($results) {
+              Write-Host ""
+              Write-Host "⚠️ PSScriptAnalyzer found issues:" -ForegroundColor Yellow
+              Write-Host ""
+
+              $results | ForEach-Object {
+                  $color = switch ($_.Severity) {
+                      'Error'   { 'Red' }
+                      'Warning' { 'Yellow' }
+                      default   { 'Cyan' }
+                  }
+                  Write-Host "[$($_.Severity)] $($_.ScriptName):$($_.Line)" -ForegroundColor $color
+                  Write-Host "  Rule: $($_.RuleName)" -ForegroundColor Gray
+                  Write-Host "  Message: $($_.Message)" -ForegroundColor White
+                  Write-Host ""
+              }
+
+              $errorCount = ($results | Where-Object { $_.Severity -eq 'Error' }).Count
+              $warningCount = ($results | Where-Object { $_.Severity -eq 'Warning' }).Count
+
+              Write-Host "📊 Summary: $errorCount error(s), $warningCount warning(s)" -ForegroundColor Cyan
+
+              if ($errorCount -gt 0) {
+                  Write-Error "❌ PSScriptAnalyzer found $errorCount error(s). Please fix them before merging."
+                  exit 1
+              }
+
+              Write-Host "⚠️ Warnings found but not blocking the PR" -ForegroundColor Yellow
+          } else {
+              Write-Host "✅ No issues found in source files" -ForegroundColor Green
+          }
+
+      - name: Run PSScriptAnalyzer on tests
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Analyzing test files..." -ForegroundColor Yellow
+
+          if (Test-Path ./tests) {
+              $results = Invoke-ScriptAnalyzer -Path ./tests -Recurse -Settings ./.vscode/analyzersettings.psd1 -Severity Error, Warning
+
+              if ($results) {
+                  Write-Host ""
+                  Write-Host "⚠️ PSScriptAnalyzer found issues in tests:" -ForegroundColor Yellow
+
+                  $results | ForEach-Object {
+                      $color = switch ($_.Severity) {
+                          'Error'   { 'Red' }
+                          'Warning' { 'Yellow' }
+                          default   { 'Cyan' }
+                      }
+                      Write-Host "[$($_.Severity)] $($_.ScriptName):$($_.Line)" -ForegroundColor $color
+                      Write-Host "  Rule: $($_.RuleName)" -ForegroundColor Gray
+                      Write-Host "  Message: $($_.Message)" -ForegroundColor White
+                      Write-Host ""
+                  }
+
+                  $errorCount = ($results | Where-Object { $_.Severity -eq 'Error' }).Count
+
+                  if ($errorCount -gt 0) {
+                      Write-Error "❌ PSScriptAnalyzer found $errorCount error(s) in tests."
+                      exit 1
+                  }
+              } else {
+                  Write-Host "✅ No issues found in test files" -ForegroundColor Green
+              }
+          } else {
+              Write-Host "ℹ️ No tests directory found, skipping..." -ForegroundColor Cyan
+          }
+
+      - name: Validate Module Manifest
+        shell: pwsh
+        run: |
+          Write-Host "📋 Validating module manifest..." -ForegroundColor Yellow
+
+          $manifestPath = "./source/PSWimToolkit.psd1"
+
+          if (Test-Path $manifestPath) {
+              try {
+                  $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
+                  Write-Host "✅ Manifest valid" -ForegroundColor Green
+                  Write-Host "   Module: $($manifest.Name)" -ForegroundColor Cyan
+                  Write-Host "   Version: $($manifest.Version)" -ForegroundColor Cyan
+                  Write-Host "   Author: $($manifest.Author)" -ForegroundColor Cyan
+              }
+              catch {
+                  Write-Error "❌ Manifest validation failed: $($_.Exception.Message)"
+                  exit 1
+              }
+          } else {
+              Write-Error "❌ Module manifest not found at $manifestPath"
+              exit 1
+          }
+
+  test:
+    name: Pester Tests
+    runs-on: windows-latest
+    needs: lint
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Module
+        shell: pwsh
+        run: |
+          Write-Host "🔨 Building module..." -ForegroundColor Yellow
+          ./build.ps1 -AutoRestore -Tasks build
+          Write-Host "✅ Build completed" -ForegroundColor Green
+
+      - name: Run Pester Tests
+        shell: pwsh
+        run: |
+          Write-Host "🧪 Running Pester tests..." -ForegroundColor Yellow
+          ./build.ps1 -Tasks test
+          Write-Host "✅ Tests completed" -ForegroundColor Green

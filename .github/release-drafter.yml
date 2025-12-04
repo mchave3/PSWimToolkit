@@ -1,0 +1,125 @@
+# Release Drafter Configuration
+# https://github.com/release-drafter/release-drafter
+
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+# Version resolver based on labels
+version-resolver:
+  major:
+    labels:
+      - 'breaking-change'
+      - 'major'
+  minor:
+    labels:
+      - 'enhancement'
+      - 'feature'
+      - 'minor'
+  patch:
+    labels:
+      - 'bug'
+      - 'bugfix'
+      - 'patch'
+      - 'fix'
+      - 'documentation'
+      - 'dependencies'
+      - 'maintenance'
+  default: patch
+
+# Categories for grouping changes
+categories:
+  - title: '💥 Breaking Changes'
+    labels:
+      - 'breaking-change'
+  - title: '🚀 New Features'
+    labels:
+      - 'enhancement'
+      - 'feature'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'bug'
+      - 'bugfix'
+      - 'fix'
+  - title: '📚 Documentation'
+    labels:
+      - 'documentation'
+  - title: '🔧 Maintenance'
+    labels:
+      - 'maintenance'
+      - 'chore'
+      - 'refactor'
+  - title: '📦 Dependencies'
+    labels:
+      - 'dependencies'
+  - title: '🧪 Tests'
+    labels:
+      - 'tests'
+  - title: '🔒 Security'
+    labels:
+      - 'security'
+  - title: '🎨 UI/UX'
+    labels:
+      - 'ui'
+      - 'gui'
+
+# Exclude from release notes
+exclude-labels:
+  - 'skip-changelog'
+  - 'duplicate'
+  - 'invalid'
+  - 'wontfix'
+
+# Auto-labeler for PR titles (backup if auto-labeler workflow misses)
+autolabeler:
+  - label: 'documentation'
+    files:
+      - '*.md'
+      - 'docs/**'
+    branch:
+      - '/docs?\//'
+  - label: 'bug'
+    branch:
+      - '/fix\//'
+      - '/bug\//'
+      - '/hotfix\//'
+    title:
+      - '/fix/i'
+      - '/bug/i'
+  - label: 'enhancement'
+    branch:
+      - '/feature\//'
+      - '/feat\//'
+    title:
+      - '/feat/i'
+      - '/feature/i'
+      - '/add/i'
+  - label: 'breaking-change'
+    title:
+      - '/breaking/i'
+      - '/!:/i'
+  - label: 'dependencies'
+    files:
+      - 'RequiredModules.psd1'
+      - '*.psd1'
+    branch:
+      - '/dep\//'
+      - '/deps\//'
+
+# Release notes template
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  ## Contributors
+
+  $CONTRIBUTORS
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+# Replacers for commit messages
+replacers:
+  - search: '/\[skip ci\]/g'
+    replace: ''
+  - search: '/\[ci skip\]/g'
+    replace: ''

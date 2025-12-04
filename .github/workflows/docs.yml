@@ -1,0 +1,198 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'source/**'
+      - 'docs/**'
+      - '*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-docs:
+    name: Generate Module Documentation
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PowerShell
+        shell: pwsh
+        run: |
+          Write-Host "🔧 PowerShell Version: $($PSVersionTable.PSVersion)" -ForegroundColor Cyan
+
+      - name: Install PlatyPS
+        shell: pwsh
+        run: |
+          Write-Host "📦 Installing PlatyPS..." -ForegroundColor Yellow
+          Install-Module -Name PlatyPS -Force -Scope CurrentUser -SkipPublisherCheck
+          Write-Host "✅ PlatyPS installed" -ForegroundColor Green
+
+      - name: Build Module
+        shell: pwsh
+        run: |
+          Write-Host "🔨 Building module..." -ForegroundColor Yellow
+          ./build.ps1 -AutoRestore -Tasks build
+          Write-Host "✅ Build completed" -ForegroundColor Green
+
+      - name: Generate Markdown Documentation
+        shell: pwsh
+        run: |
+          Write-Host "📝 Generating documentation..." -ForegroundColor Yellow
+
+          # Find the built module
+          $BaseModulePath = Join-Path $PWD "output/module/PSWimToolkit"
+          $versionDirs = Get-ChildItem -Path $BaseModulePath -Directory | Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' }
+
+          if (-not $versionDirs) {
+              Write-Error "No module version found"
+              exit 1
+          }
+
+          $latestVersion = ($versionDirs | Sort-Object { [Version]$_.Name } -Descending)[0]
+          $ModulePath = $latestVersion.FullName
+
+          Write-Host "📂 Module path: $ModulePath" -ForegroundColor Cyan
+
+          # Import the module
+          Import-Module $ModulePath -Force -ErrorAction Stop
+          Write-Host "✅ Module imported" -ForegroundColor Green
+
+          # Create docs directory if it doesn't exist
+          $docsPath = "./docs/commands"
+          if (-not (Test-Path $docsPath)) {
+              New-Item -Path $docsPath -ItemType Directory -Force | Out-Null
+          }
+
+          # Generate documentation for each public function
+          $commands = Get-Command -Module PSWimToolkit -CommandType Function
+
+          if ($commands) {
+              Write-Host "📚 Generating docs for $($commands.Count) command(s)..." -ForegroundColor Cyan
+
+              # Update or create markdown help
+              try {
+                  if (Get-ChildItem $docsPath -Filter "*.md" -ErrorAction SilentlyContinue) {
+                      Update-MarkdownHelp -Path $docsPath -Force
+                  } else {
+                      New-MarkdownHelp -Module PSWimToolkit -OutputFolder $docsPath -Force
+                  }
+                  Write-Host "✅ Markdown documentation generated" -ForegroundColor Green
+              }
+              catch {
+                  Write-Warning "Could not generate markdown help: $($_.Exception.Message)"
+                  # Try generating fresh docs
+                  New-MarkdownHelp -Module PSWimToolkit -OutputFolder $docsPath -Force -ErrorAction SilentlyContinue
+              }
+
+              # List generated files
+              $generatedFiles = Get-ChildItem $docsPath -Filter "*.md"
+              Write-Host ""
+              Write-Host "📄 Generated documentation files:" -ForegroundColor Cyan
+              $generatedFiles | ForEach-Object { Write-Host "   - $($_.Name)" -ForegroundColor White }
+          } else {
+              Write-Host "⚠️ No public commands found in module" -ForegroundColor Yellow
+          }
+
+      - name: Generate Module Summary
+        shell: pwsh
+        run: |
+          Write-Host "📋 Generating module summary..." -ForegroundColor Yellow
+
+          $summaryPath = "./docs/README.md"
+
+          # Get module info
+          $manifest = Test-ModuleManifest -Path "./source/PSWimToolkit.psd1"
+
+          $summary = @"
+          # PSWimToolkit Documentation
+
+          ## Module Information
+
+          | Property | Value |
+          |----------|-------|
+          | **Name** | $($manifest.Name) |
+          | **Version** | $($manifest.Version) |
+          | **Author** | $($manifest.Author) |
+          | **PowerShell Version** | $($manifest.PowerShellVersion)+ |
+
+          ## Description
+
+          $($manifest.Description)
+
+          ## Installation
+
+          ``````powershell
+          Install-Module -Name PSWimToolkit
+          ``````
+
+          ## Commands
+
+          | Command | Synopsis |
+          |---------|----------|
+          "@
+
+          # Add commands table
+          $commands = Get-Command -Module PSWimToolkit -CommandType Function -ErrorAction SilentlyContinue
+          if ($commands) {
+              foreach ($cmd in $commands) {
+                  $help = Get-Help $cmd.Name -ErrorAction SilentlyContinue
+                  $synopsis = if ($help.Synopsis) { $help.Synopsis.Trim() } else { "No description available" }
+                  $summary += "`n| [$($cmd.Name)](commands/$($cmd.Name).md) | $synopsis |"
+              }
+          } else {
+              $summary += "`n| *No public commands exported* | |"
+          }
+
+          $summary += @"
+
+
+          ## Quick Start
+
+          ``````powershell
+          # Import the module
+          Import-Module PSWimToolkit
+
+          # Start the GUI
+          Start-PSWimToolkit
+          ``````
+
+          ## License
+
+          This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+          "@
+
+          # Ensure docs directory exists
+          if (-not (Test-Path "./docs")) {
+              New-Item -Path "./docs" -ItemType Directory -Force | Out-Null
+          }
+
+          $summary | Out-File -FilePath $summaryPath -Encoding UTF8 -Force
+          Write-Host "✅ Module summary generated at $summaryPath" -ForegroundColor Green
+
+      - name: Commit Documentation
+        shell: pwsh
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add docs/
+
+          $changes = git diff --cached --name-only
+          if ($changes) {
+              Write-Host "📤 Committing documentation changes..." -ForegroundColor Yellow
+              git commit -m "docs: auto-generate documentation [skip ci]"
+              git push
+              Write-Host "✅ Documentation committed and pushed" -ForegroundColor Green
+          } else {
+              Write-Host "ℹ️ No documentation changes to commit" -ForegroundColor Cyan
+          }

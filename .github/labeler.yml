@@ -1,0 +1,74 @@
+# Auto-labeler configuration
+# https://github.com/actions/labeler
+
+# Source code changes
+source:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'source/**/*.ps1'
+          - 'source/**/*.psm1'
+
+# Test changes
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+
+# Documentation changes
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - 'source/en-US/**'
+
+# GUI changes
+gui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'source/GUI/**'
+          - '**/*.xaml'
+
+# Build/CI changes
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'build.ps1'
+          - 'build.yaml'
+          - '*.psd1'
+
+# Dependencies changes
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'RequiredModules.psd1'
+          - 'Resolve-Dependency.ps1'
+          - 'Resolve-Dependency.psd1'
+
+# Private functions
+private:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'source/Private/**'
+
+# Public functions
+public:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'source/Public/**'
+
+# Classes
+classes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'source/Classes/**'
+
+# Configuration
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.vscode/**'
+          - '*.json'
+          - '*.yaml'
+          - '*.yml'

@@ -1,0 +1,74 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'RequiredModules.psd1'
+      - '*.psd1'
+      - 'source/**/*.psd1'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Review Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Fail on high and critical vulnerabilities
+          fail-on-severity: high
+          # Comment on PR with findings
+          comment-summary-in-pr: always
+          # Deny specific licenses (optional)
+          # deny-licenses: GPL-3.0, AGPL-3.0
+
+      - name: Check PowerShell Module Dependencies
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Checking PowerShell module dependencies..." -ForegroundColor Yellow
+
+          $requiredModulesPath = "./RequiredModules.psd1"
+
+          if (Test-Path $requiredModulesPath) {
+              Write-Host "📋 Required modules found:" -ForegroundColor Cyan
+              $content = Get-Content $requiredModulesPath -Raw
+
+              # Parse the PSD1 file
+              $modules = Invoke-Expression $content
+
+              foreach ($module in $modules.GetEnumerator()) {
+                  $moduleName = $module.Key
+                  $moduleVersion = $module.Value
+
+                  if ($moduleName -eq 'PSDependOptions') { continue }
+
+                  Write-Host "  📦 $moduleName : $moduleVersion" -ForegroundColor White
+
+                  # Check if module exists in PSGallery
+                  try {
+                      $galleryModule = Find-Module -Name $moduleName -ErrorAction SilentlyContinue
+                      if ($galleryModule) {
+                          Write-Host "     ✅ Available in PSGallery (Latest: $($galleryModule.Version))" -ForegroundColor Green
+                      } else {
+                          Write-Host "     ⚠️ Not found in PSGallery" -ForegroundColor Yellow
+                      }
+                  }
+                  catch {
+                      Write-Host "     ⚠️ Could not verify: $($_.Exception.Message)" -ForegroundColor Yellow
+                  }
+              }
+          } else {
+              Write-Host "ℹ️ No RequiredModules.psd1 found" -ForegroundColor Cyan
+          }
+
+          Write-Host ""
+          Write-Host "✅ Dependency check completed" -ForegroundColor Green

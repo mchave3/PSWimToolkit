@@ -1,121 +1,166 @@
 name: Publish to PowerShell Gallery
 
 on:
+  # Manual trigger with optional force parameter
   workflow_dispatch:
     inputs:
       force:
-        description: 'Skip gallery version check (use only when republishing the same version).'
-        required: false
-        default: false
-        type: boolean
-      whatif:
-        description: 'Run the publish command in WhatIf mode without pushing to the gallery.'
+        description: 'Force publication even if version already exists'
         required: false
         default: false
         type: boolean
 
-permissions:
-  contents: read
-
-env:
-  MODULE_NAME: PSWimToolkit
-
-defaults:
-  run:
-    shell: pwsh
+  # Automatic trigger on release
+  release:
+    types: [published]
 
 jobs:
   publish:
+    name: Publish Module
     runs-on: windows-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Restore build dependencies
+      - name: Setup PowerShell
+        shell: pwsh
         run: |
-          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          ./build.ps1 -ResolveDependency -Tasks noop
+          Write-Host "🔧 PowerShell Version: $($PSVersionTable.PSVersion)" -ForegroundColor Cyan
+          Write-Host "🔧 OS: $($PSVersionTable.OS)" -ForegroundColor Cyan
 
-      - name: Build module
-        run: ./build.ps1 -Tasks build -AutoRestore
+      - name: Build Module
+        shell: pwsh
+        run: |
+          Write-Host "🔨 Building module..." -ForegroundColor Yellow
+          ./build.ps1 -AutoRestore -Tasks build
+          Write-Host "✅ Build completed" -ForegroundColor Green
+
+      - name: Find and Validate Module
+        id: validate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # Define base paths
+          $BaseModulePath = Join-Path $env:GITHUB_WORKSPACE "output/module/PSWimToolkit"
+
+          Write-Host "🔍 Finding latest module version..." -ForegroundColor Yellow
+          $versionDirs = Get-ChildItem -Path $BaseModulePath -Directory | Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' }
+
+          if (-not $versionDirs) {
+              Write-Error "No version directories found in $BaseModulePath"
+              exit 1
+          }
+
+          $latestVersionDir = ($versionDirs | Sort-Object { [Version]$_.Name } -Descending)[0]
+          $ModulePath = $latestVersionDir.FullName
+          $ManifestPath = Join-Path $ModulePath "PSWimToolkit.psd1"
+
+          Write-Host "🔍 Detected version: $($latestVersionDir.Name)" -ForegroundColor Cyan
+          Write-Host "📂 Module path: $ModulePath" -ForegroundColor Cyan
+
+          # Validate manifest
+          Write-Host "📋 Validating module manifest..." -ForegroundColor Yellow
+          $manifest = Test-ModuleManifest -Path $ManifestPath -ErrorAction Stop
+          Write-Host "✅ Manifest valid - Version: $($manifest.Version)" -ForegroundColor Green
+
+          # Export variables for next steps
+          "MODULE_PATH=$ModulePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "MODULE_VERSION=$($manifest.Version)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Check PowerShell Gallery Version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          Write-Host "🔍 Checking PowerShell Gallery versions..." -ForegroundColor Yellow
+
+          try {
+              $existingVersions = Find-Module -Name PSWimToolkit -Repository PSGallery -AllVersions -ErrorAction SilentlyContinue
+
+              if ($existingVersions) {
+                  $galleryLatest = ($existingVersions | Sort-Object Version -Descending)[0].Version
+                  Write-Host "📦 Latest version in gallery: $galleryLatest" -ForegroundColor Cyan
+                  Write-Host "📦 Version to publish: $env:MODULE_VERSION" -ForegroundColor Cyan
+
+                  if ([Version]$galleryLatest -ge [Version]$env:MODULE_VERSION) {
+                      if ('${{ github.event.inputs.force }}' -ne 'true') {
+                          Write-Warning "Version $env:MODULE_VERSION is not greater than existing version $galleryLatest"
+                          Write-Host "💡 Use workflow_dispatch with force=true to override" -ForegroundColor Magenta
+                          exit 1
+                      } else {
+                          Write-Host "⚠️ Force flag enabled, proceeding with publication..." -ForegroundColor Yellow
+                      }
+                  }
+              } else {
+                  Write-Host "📦 No existing versions found in gallery (first publish)" -ForegroundColor Cyan
+              }
+          }
+          catch {
+              Write-Warning "Could not check existing versions: $($_.Exception.Message)"
+              Write-Host "Proceeding with publication attempt..." -ForegroundColor Yellow
+          }
 
       - name: Publish to PowerShell Gallery
+        shell: pwsh
         env:
-          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
-          FORCE_PUBLISH: ${{ inputs.force }}
-          WHATIF: ${{ inputs.whatif }}
+          PSGALLERY_API_KEY: ${{ secrets.API_KEY }}
         run: |
           $ErrorActionPreference = 'Stop'
 
           if (-not $env:PSGALLERY_API_KEY) {
-              throw 'PSGALLERY_API_KEY secret is not defined.'
+              Write-Error "API_KEY secret is not set. Please add it to your repository secrets."
+              exit 1
           }
 
-          $moduleName = $env:MODULE_NAME
-          $baseModulePath = Join-Path $env:GITHUB_WORKSPACE "output/module/$moduleName"
+          Write-Host "📤 Publishing to PowerShell Gallery..." -ForegroundColor Yellow
+          Write-Host "Module: PSWimToolkit v$env:MODULE_VERSION" -ForegroundColor Cyan
+          Write-Host "Path: $env:MODULE_PATH" -ForegroundColor Cyan
 
-          if (-not (Test-Path $baseModulePath)) {
-              throw "Module output path not found: $baseModulePath. Ensure the build step completed."
-          }
-
-          $versionDirs = Get-ChildItem -Path $baseModulePath -Directory |
-              Where-Object { $_.Name -match '^\d+(\.\d+){2,3}$' } |
-              Sort-Object { [version]$_.Name } -Descending
-
-          if (-not $versionDirs) {
-              throw "No version directories found under $baseModulePath. Run the build first."
-          }
-
-          $modulePath = $versionDirs[0].FullName
-          $manifestPath = Join-Path $modulePath "$moduleName.psd1"
-
-          if (-not (Test-Path $manifestPath)) {
-              $nestedPath = Join-Path $modulePath $moduleName
-              $nestedManifest = Join-Path $nestedPath "$moduleName.psd1"
-
-              if (Test-Path $nestedManifest) {
-                  $modulePath = $nestedPath
-                  $manifestPath = $nestedManifest
-              }
-          }
-
-          if (-not (Test-Path $manifestPath)) {
-              throw "Could not locate $moduleName.psd1 under $modulePath."
-          }
-
-          $manifest = Test-ModuleManifest -Path $manifestPath
-          Write-Host "Publishing $moduleName v$($manifest.Version) from $modulePath"
-
-          $forcePublish = [System.Convert]::ToBoolean($env:FORCE_PUBLISH)
-          $whatIf = [System.Convert]::ToBoolean($env:WHATIF)
-
-          $existingVersions = Find-Module -Name $moduleName -Repository PSGallery -AllVersions -ErrorAction SilentlyContinue
-          if ($existingVersions) {
-              $latestGallery = ($existingVersions | Sort-Object Version -Descending)[0].Version
-              Write-Host "Latest version on PSGallery: $latestGallery"
-
-              if ([version]$latestGallery -ge [version]$manifest.Version -and -not $forcePublish) {
-                  throw "Version $($manifest.Version) is not greater than gallery version $latestGallery. Re-run with the 'force' input to override this check."
-              }
-          }
-
+          # Prepare publish parameters
           $publishParams = @{
-              Path       = $modulePath
+              Path       = $env:MODULE_PATH
               Repository = 'PSGallery'
               Verbose    = $true
           }
 
-          if ($whatIf) {
-              $publishParams['WhatIf'] = $true
+          # Check which publish command is available
+          if (Get-Command 'Publish-PSResource' -ErrorAction SilentlyContinue) {
+              Write-Host "Using Publish-PSResource..." -ForegroundColor Cyan
+              $publishParams.ApiKey = $env:PSGALLERY_API_KEY
+              Publish-PSResource @publishParams
+          } else {
+              Write-Host "Using Publish-Module..." -ForegroundColor Cyan
+              $publishParams.NuGetApiKey = $env:PSGALLERY_API_KEY
+              Publish-Module @publishParams
           }
 
-          if (Get-Command -Name Publish-PSResource -ErrorAction SilentlyContinue) {
-              $publishParams['ApiKey'] = $env:PSGALLERY_API_KEY
-              Publish-PSResource @publishParams
+          Write-Host ""
+          Write-Host "🎉 SUCCESS! PSWimToolkit v$env:MODULE_VERSION published!" -ForegroundColor Green
+          Write-Host "=================================" -ForegroundColor Green
+          Write-Host "📦 Installation command:" -ForegroundColor Cyan
+          Write-Host "Install-Module -Name PSWimToolkit -RequiredVersion $env:MODULE_VERSION" -ForegroundColor White
+          Write-Host ""
+          Write-Host "⏰ Note: It may take a few minutes for the new version to appear in search results." -ForegroundColor Yellow
+
+      - name: Verify Publication
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Waiting for gallery to update..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 30
+
+          try {
+              $published = Find-Module -Name PSWimToolkit -Repository PSGallery -ErrorAction SilentlyContinue
+              if ($published) {
+                  Write-Host "✅ Module found in gallery: PSWimToolkit v$($published.Version)" -ForegroundColor Green
+              } else {
+                  Write-Host "⏰ Module not yet visible in gallery search. This is normal - it may take a few minutes." -ForegroundColor Yellow
+              }
           }
-          else {
-              $publishParams['NuGetApiKey'] = $env:PSGALLERY_API_KEY
-              Publish-Module @publishParams
+          catch {
+              Write-Host "⏰ Could not verify publication yet. Check manually at:" -ForegroundColor Yellow
+              Write-Host "https://www.powershellgallery.com/packages/PSWimToolkit" -ForegroundColor Cyan
           }
