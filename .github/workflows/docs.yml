@@ -60,11 +60,12 @@ jobs:
 
           $latestVersion = ($versionDirs | Sort-Object { [Version]$_.Name } -Descending)[0]
           $ModulePath = $latestVersion.FullName
+          $ManifestPath = Join-Path $ModulePath "PSWimToolkit.psd1"
 
           Write-Host "📂 Module path: $ModulePath" -ForegroundColor Cyan
 
-          # Import the module
-          Import-Module $ModulePath -Force -ErrorAction Stop
+          # Import the module using the manifest file
+          Import-Module $ManifestPath -Force -ErrorAction Stop
           Write-Host "✅ Module imported" -ForegroundColor Green
 
           # Create docs directory if it doesn't exist
