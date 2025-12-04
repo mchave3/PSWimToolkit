@@ -12,4 +12,4 @@ updates:
       - "dependencies"
       - "ci"
     commit-message:
-      prefix: "ci"
+      prefix: "GH Actions"
