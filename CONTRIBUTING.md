@@ -4,13 +4,25 @@ First off, thank you for considering contributing to PSWimToolkit! 🎉
 
 ## 📋 Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Making Changes](#making-changes)
-- [Coding Guidelines](#coding-guidelines)
-- [Testing](#testing)
-- [Submitting Changes](#submitting-changes)
+- [Contributing to PSWimToolkit](#contributing-to-pswimtoolkit)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [Code of Conduct](#code-of-conduct)
+  - [Getting Started](#getting-started)
+  - [Development Setup](#development-setup)
+    - [Prerequisites](#prerequisites)
+    - [Building the Module](#building-the-module)
+    - [Running Tests](#running-tests)
+  - [Making Changes](#making-changes)
+    - [Commit Message Format](#commit-message-format)
+  - [Coding Guidelines](#coding-guidelines)
+    - [PowerShell Style](#powershell-style)
+    - [File Organization](#file-organization)
+    - [Example Function Template](#example-function-template)
+  - [Testing](#testing)
+    - [Writing Tests](#writing-tests)
+    - [Test Example](#test-example)
+  - [Submitting Changes](#submitting-changes)
+  - [Questions?](#questions)
 
 ## Code of Conduct
 
