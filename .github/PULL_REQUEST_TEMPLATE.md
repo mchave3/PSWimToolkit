@@ -1,59 +1,55 @@
 # Pull Request
 
 <!--
-    Thanks for submitting a Pull Request (PR) to this project.
-    Your contribution to this project is greatly appreciated!
+    Thanks for submitting a Pull Request (PR) to PSWimToolkit!
+    Your contribution is greatly appreciated!
 
-    TITLE: Please be descriptive not sensationalist.
-    Also prepend with [BREAKING CHANGE] if relevant.
-    i.e. [BREAKING CHANGE][xFile] Add security descriptor property
-
-    You may remove this comment block, and the other comment blocks, but please
-    keep the headers and the task list.
-    Try to keep your PRs atomic: changes grouped in smallest batch affecting a single logical unit.
+    Please provide a clear title describing your changes.
+    Prefix with [BREAKING CHANGE] if applicable.
 -->
 
-## Pull Request (PR) description
+## Description
 
 <!--
-    Replace this comment block with a description of your PR to provide context.
-    Please be describe the intent and link issue where the problem has been discussed.
-    try to link the issue that it fixes by providing the verb and ref: [fix|close #18]
-
-    After the description, please concisely list the changes as per keepachangelog.com
-    This **should** duplicate what you've updated in the changelog file.
-
-### Added
-- for new features [closes #15]
-### Changed
-- for changes in existing functionality.
-### Deprecated
-- for soon-to-be removed features.
-### Security
-- in case of vulnerabilities.
-### Fixed
-- for any bug fixes. [fix #52]
-### Removed
-- for now removed features.
+    Describe what this PR does and why.
+    Link any related issues: fixes #123, closes #456
 -->
 
-## Task list
+## Type of Change
+
+<!-- Check the relevant option(s) -->
+
+- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
+- [ ] ✨ New feature (non-breaking change that adds functionality)
+- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to change)
+- [ ] 📚 Documentation update
+- [ ] 🔧 Maintenance / Refactoring
+- [ ] 🧪 Tests
+
+## Changes Made
 
 <!--
-    To aid community reviewers in reviewing and merging your PR, please take
-    the time to run through the below checklist and make sure your PR has
-    everything updated as required.
-
-    Change to [x] for each task in the task list that applies to your PR.
-    For those task that don't apply to you PR, leave those as is.
+    List the changes made in this PR:
+    - Added X
+    - Fixed Y
+    - Updated Z
 -->
 
-- [ ] The PR represents a single logical change. i.e. Cosmetic updates should go in different PRs.
-- [ ] Added an entry under the Unreleased section of in the CHANGELOG.md as per [format](https://keepachangelog.com/en/1.0.0/).
-- [ ] Local clean build passes without issue or fail tests (`build.ps1 -ResolveDependency`).
-- [ ] Resource documentation added/updated in README.md.
-- [ ] Resource parameter descriptions added/updated in README.md, schema.mof
-      and comment-based help.
-- [ ] Comment-based help added/updated.
-- [ ] Localization strings added/updated in all localization files as appropriate.
-- [ ] Examples appropriately added/updated.
+## Checklist
+
+<!-- Check all that apply -->
+
+- [ ] My code follows the project's coding style
+- [ ] I have tested my changes locally (`./build.ps1 -Tasks test`)
+- [ ] I have updated the CHANGELOG.md (if applicable)
+- [ ] I have updated documentation (if applicable)
+- [ ] I have added/updated comment-based help for functions (if applicable)
+- [ ] My changes generate no new warnings from PSScriptAnalyzer
+
+## Screenshots (if applicable)
+
+<!-- Add screenshots for GUI changes -->
+
+## Additional Notes
+
+<!-- Any additional information that reviewers should know -->
