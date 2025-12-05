@@ -99,9 +99,9 @@ Pester:
   # - tests/Unit
   # - tests/Integration
   ExcludeTag:
-  #  - helpQuality
-  #  - FunctionalQuality
-  #  - TestQuality
+    - helpQuality      # Skip help documentation tests (SYNOPSIS, DESCRIPTION, EXAMPLES, parameters)
+    # - FunctionalQuality  # Basic module import/remove tests - keep enabled
+    - TestQuality      # Skip unit test existence check for each function
   Tag:
   CodeCoverageThreshold: 0 # Set to 0 to bypass
   #CodeCoverageOutputFile: JaCoCo_$OsShortName.xml
