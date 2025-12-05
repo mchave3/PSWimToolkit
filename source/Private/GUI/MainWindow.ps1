@@ -126,6 +126,18 @@ function Show-PSWimToolkitMainWindow {
 
     #endregion Platform Validation
 
+    #region Path Resolution
+
+    # Resolve the XAML root directory (source/GUI/) from the module path
+    $moduleBase = Split-Path -Path $ModulePath -Parent
+    $xamlRoot = Join-Path -Path $moduleBase -ChildPath 'GUI'
+
+    if (-not (Test-Path -LiteralPath $xamlRoot -PathType Container)) {
+        throw "Unable to locate GUI resources directory at $xamlRoot."
+    }
+
+    #endregion Path Resolution
+
     #region Assembly Loading
 
     Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
@@ -136,7 +148,7 @@ function Show-PSWimToolkitMainWindow {
 
     #region XAML Loading
 
-    $xamlPath = Join-Path -Path $PSScriptRoot -ChildPath 'MainWindow.xaml'
+    $xamlPath = Join-Path -Path $xamlRoot -ChildPath 'MainWindow.xaml'
     if (-not (Test-Path -LiteralPath $xamlPath -PathType Leaf)) {
         throw "Unable to locate GUI layout at $xamlPath."
     }
@@ -149,7 +161,7 @@ function Show-PSWimToolkitMainWindow {
 
     #region Styles Loading
 
-    $stylesPath = Join-Path -Path $PSScriptRoot -ChildPath 'Styles.xaml'
+    $stylesPath = Join-Path -Path $xamlRoot -ChildPath 'Styles.xaml'
     $stylesXmlDocument = $null
     $stylesLoadWarningEmitted = $false
 
@@ -231,7 +243,8 @@ function Show-PSWimToolkitMainWindow {
         LogItems                 = $logItems
         StylesXmlDocument        = $stylesXmlDocument
         StylesLoadWarningEmitted = $stylesLoadWarningEmitted
-        GuiRoot                  = $PSScriptRoot
+        XamlRoot                 = $xamlRoot
+        GuiRoot                  = $xamlRoot  # Rétrocompatibilité - pointe vers les fichiers XAML
     }
 
     #endregion Context Object
