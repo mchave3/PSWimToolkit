@@ -244,7 +244,7 @@ function Show-PSWimToolkitMainWindow {
         StylesXmlDocument        = $stylesXmlDocument
         StylesLoadWarningEmitted = $stylesLoadWarningEmitted
         XamlRoot                 = $xamlRoot
-        GuiRoot                  = $xamlRoot  # Rétrocompatibilité - pointe vers les fichiers XAML
+        GuiRoot                  = $xamlRoot  # Alias for clarity
     }
 
     #endregion Context Object
