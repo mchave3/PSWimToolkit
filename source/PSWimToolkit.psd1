@@ -104,10 +104,10 @@ PrivateData = @{
         )
 
         # A URL to the license for this module.
-        LicenseUri = 'https://github.com/Mickael-CHAVE/PSWimToolkit/blob/main/LICENSE'
+        LicenseUri = 'https://github.com/mchave3/PSWimToolkit/blob/main/LICENSE'
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/Mickael-CHAVE/PSWimToolkit'
+        ProjectUri = 'https://github.com/mchave3/PSWimToolkit'
 
         # A URL to an icon representing this module.
         # IconUri = ''
