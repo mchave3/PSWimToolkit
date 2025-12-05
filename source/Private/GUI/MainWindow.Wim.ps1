@@ -307,9 +307,16 @@ function Show-WimDetailsDialog {
     )
 
     if (-not $Items -or $Items.Count -eq 0) {
-        [System.Windows.MessageBox]::Show('Select at least one WIM entry to review details.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+        [System.Windows.MessageBox]::Show(
+            'Select at least one WIM entry to review details.',
+            'PSWimToolkit',
+            'OK',
+            'Information'
+        ) | Out-Null
         return
     }
+
+    #region Dialog Loading
 
     $dialogPath = Join-Path -Path $Context.GuiRoot -ChildPath 'WimDetailsDialog.xaml'
 
@@ -317,27 +324,36 @@ function Show-WimDetailsDialog {
         throw "Unable to locate details dialog layout at $dialogPath."
     }
 
-    [xml]$dialogXml = Get-Content -LiteralPath $dialogPath -Raw
-    $dialogReader = New-Object System.Xml.XmlNodeReader $dialogXml
-    $dialog = [Windows.Markup.XamlReader]::Load($dialogReader)
+    [xml] $dialogXml = Get-Content -LiteralPath $dialogPath -Raw
+    $dialogReader = [System.Xml.XmlNodeReader]::new($dialogXml)
+    $dialog = [System.Windows.Markup.XamlReader]::Load($dialogReader)
     $dialog.Owner = $Context.Window
 
     Add-SharedGuiStyles -Context $Context -Target $dialog
 
-    $detailsControls = @{
-        HeaderText     = $dialog.FindName('HeaderText')
-        WimDetailsList = $dialog.FindName('WimDetailsList')
-        StatusText     = $dialog.FindName('StatusText')
-        CopyButton     = $dialog.FindName('CopyDetailsButton')
-        RefreshButton  = $dialog.FindName('RefreshButton')
-        CloseButton    = $dialog.FindName('CloseButton')
-    }
+    #endregion Dialog Loading
 
-    foreach ($key in $detailsControls.Keys) {
-        if (-not $detailsControls[$key]) {
-            throw "Unable to locate WIM details dialog control '$key'."
+    #region Dynamic Control Binding
+
+    $detailsControls = Get-WindowControls -Window $dialog -XamlDocument $dialogXml
+
+    # Validate required controls
+    $requiredControls = @(
+        'HeaderText'
+        'WimDetailsList'
+        'StatusText'
+        'CopyDetailsButton'
+        'RefreshButton'
+        'CloseButton'
+    )
+
+    foreach ($requiredControl in $requiredControls) {
+        if (-not $detailsControls.ContainsKey($requiredControl)) {
+            throw "Required WIM details dialog control '$requiredControl' was not found in XAML."
         }
     }
+
+    #endregion Dynamic Control Binding
 
     $detailItems = [System.Collections.ObjectModel.ObservableCollection[psobject]]::new()
     $detailsControls.WimDetailsList.ItemsSource = $detailItems
@@ -380,7 +396,7 @@ function Show-WimDetailsDialog {
         Populate-WimDetails -Context $Context -Items $Items -DetailItems $detailItems -Controls $detailsControls -RefreshMetadata:$true
     })
 
-    $detailsControls.CopyButton.Add_Click({
+    $detailsControls.CopyDetailsButton.Add_Click({
         $selection = @($detailsControls.WimDetailsList.SelectedItems)
         if ($selection.Count -eq 0) {
             $selection = @($detailItems)
