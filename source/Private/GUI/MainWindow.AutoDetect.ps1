@@ -11,9 +11,16 @@ function Show-AutoDetectDialog {
     )
 
     if (-not $Items -or $Items.Count -eq 0) {
-        [System.Windows.MessageBox]::Show('Select at least one WIM entry before running auto detect.', 'PSWimToolkit', 'OK', 'Information') | Out-Null
+        [System.Windows.MessageBox]::Show(
+            'Select at least one WIM entry before running auto detect.',
+            'PSWimToolkit',
+            'OK',
+            'Information'
+        ) | Out-Null
         return
     }
+
+    #region Dialog Loading
 
     $dialogPath = Join-Path -Path $Context.GuiRoot -ChildPath 'AutoDetectDialog.xaml'
 
@@ -21,30 +28,35 @@ function Show-AutoDetectDialog {
         throw "Unable to locate auto detect dialog layout at $dialogPath."
     }
 
-    [xml]$dialogXml = Get-Content -LiteralPath $dialogPath -Raw
-    $dialogReader = New-Object System.Xml.XmlNodeReader $dialogXml
-    $dialog = [Windows.Markup.XamlReader]::Load($dialogReader)
+    [xml] $dialogXml = Get-Content -LiteralPath $dialogPath -Raw
+    $dialogReader = [System.Xml.XmlNodeReader]::new($dialogXml)
+    $dialog = [System.Windows.Markup.XamlReader]::Load($dialogReader)
     $dialog.Owner = $Context.Window
 
     Add-SharedGuiStyles -Context $Context -Target $dialog
 
-    $detectControls = @{
-        DownloadPathTextBox              = $dialog.FindName('DownloadPathTextBox')
-        BrowseDownloadPathButton         = $dialog.FindName('BrowseDownloadPathButton')
-        AutoDetectUpdateTypeComboBox     = $dialog.FindName('AutoDetectUpdateTypeComboBox')
-        AutoDetectIncludePreviewCheckBox = $dialog.FindName('AutoDetectIncludePreviewCheckBox')
-        AutoDetectResults                = $dialog.FindName('AutoDetectResults')
-        QueueDownloadButton              = $dialog.FindName('QueueDownloadButton')
-        CopyUpdatesButton                = $dialog.FindName('CopyUpdatesButton')
-        CloseButton                      = $dialog.FindName('CloseButton')
-        StatusText                       = $dialog.FindName('AutoDetectStatusText')
-    }
+    #endregion Dialog Loading
 
-    foreach ($key in $detectControls.Keys) {
-        if (-not $detectControls[$key]) {
-            throw "Unable to locate auto-detect dialog control '$key'."
+    #region Dynamic Control Binding
+
+    $detectControls = Get-WindowControls -Window $dialog -XamlDocument $dialogXml
+
+    # Validate required controls
+    $requiredControls = @(
+        'DownloadPathTextBox'
+        'AutoDetectResults'
+        'QueueDownloadButton'
+        'CloseButton'
+        'AutoDetectStatusText'
+    )
+
+    foreach ($requiredControl in $requiredControls) {
+        if (-not $detectControls.ContainsKey($requiredControl)) {
+            throw "Required auto-detect dialog control '$requiredControl' was not found in XAML."
         }
     }
+
+    #endregion Dynamic Control Binding
 
     if (-not $Context.State.CatalogFacets) {
         $Context.State.CatalogFacets = Get-ToolkitCatalogData
@@ -82,7 +94,7 @@ function Show-AutoDetectDialog {
             [string] $Message
         )
 
-        $Controls.StatusText.Text = $Message
+        $Controls.AutoDetectStatusText.Text = $Message
     }
 
     function Get-UpdateKbValue {

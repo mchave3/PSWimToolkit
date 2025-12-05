@@ -13,12 +13,7 @@ function Start-PSWimToolkit {
     }
 
     Write-ToolkitLog -Message "Module loaded from: $($module.Path)" -Type Debug -Source 'Start-PSWimToolkit'
-
-    $guiPath = Join-Path -Path $module.ModuleBase -ChildPath 'GUI/MainWindow.ps1'
-    $resolvedGuiPath = Resolve-Path -LiteralPath $guiPath -ErrorAction Stop
-
-    Write-ToolkitLog -Message "Loading GUI from: $resolvedGuiPath" -Type Info -Source 'Start-PSWimToolkit'
-    . $resolvedGuiPath
+    Write-ToolkitLog -Message "Launching main window..." -Type Info -Source 'Start-PSWimToolkit'
 
     Show-PSWimToolkitMainWindow -ModulePath $module.Path
 

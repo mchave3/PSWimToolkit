@@ -6,49 +6,48 @@ function Show-CatalogDialog {
         [psobject] $Context
     )
 
+    #region Dialog Loading
+
     $dialogPath = Join-Path -Path $Context.GuiRoot -ChildPath 'CatalogDialog.xaml'
 
     if (-not (Test-Path -LiteralPath $dialogPath -PathType Leaf)) {
         throw "Unable to locate catalog dialog layout at $dialogPath."
     }
 
-    [xml]$dialogXml = Get-Content -LiteralPath $dialogPath -Raw
-    $dialogReader = New-Object System.Xml.XmlNodeReader $dialogXml
-    $dialog = [Windows.Markup.XamlReader]::Load($dialogReader)
+    [xml] $dialogXml = Get-Content -LiteralPath $dialogPath -Raw
+    $dialogReader = [System.Xml.XmlNodeReader]::new($dialogXml)
+    $dialog = [System.Windows.Markup.XamlReader]::Load($dialogReader)
     $dialog.Owner = $Context.Window
 
     Add-SharedGuiStyles -Context $Context -Target $dialog
 
-    $catalogControls = @{
-        SearchTextBox            = $dialog.FindName('SearchTextBox')
-        SearchButton             = $dialog.FindName('SearchButton')
-        OperatingSystemComboBox  = $dialog.FindName('OperatingSystemComboBox')
-        ReleaseComboBox          = $dialog.FindName('ReleaseComboBox')
-        ArchitectureComboBox     = $dialog.FindName('ArchitectureComboBox')
-        UpdateTypeComboBox       = $dialog.FindName('UpdateTypeComboBox')
-        AllPagesCheckBox         = $dialog.FindName('AllPagesCheckBox')
-        IncludePreviewCheckBox   = $dialog.FindName('IncludePreviewCheckBox')
-        IncludeDynamicCheckBox   = $dialog.FindName('IncludeDynamicCheckBox')
-        GetFrameworkCheckBox     = $dialog.FindName('GetFrameworkCheckBox')
-        ExcludeFrameworkCheckBox = $dialog.FindName('ExcludeFrameworkCheckBox')
-        StrictCheckBox           = $dialog.FindName('StrictCheckBox')
-        IncludeFileNamesCheckBox = $dialog.FindName('IncludeFileNamesCheckBox')
-        LastDaysTextBox          = $dialog.FindName('LastDaysTextBox')
-        MinSizeTextBox           = $dialog.FindName('MinSizeTextBox')
-        MaxSizeTextBox           = $dialog.FindName('MaxSizeTextBox')
-        SizeUnitComboBox         = $dialog.FindName('SizeUnitComboBox')
-        ResultsList              = $dialog.FindName('ResultsList')
-        DownloadButton           = $dialog.FindName('DownloadButton')
-        CopyButton               = $dialog.FindName('CopyButton')
-        CloseButton              = $dialog.FindName('CloseButton')
-        StatusText               = $dialog.FindName('CatalogStatusText')
-    }
+    #endregion Dialog Loading
 
-    foreach ($key in $catalogControls.Keys) {
-        if (-not $catalogControls[$key]) {
-            throw "Unable to locate catalog dialog control '$key'."
+    #region Dynamic Control Binding
+
+    $catalogControls = Get-WindowControls -Window $dialog -XamlDocument $dialogXml
+
+    # Validate required controls
+    $requiredControls = @(
+        'SearchTextBox'
+        'SearchButton'
+        'OperatingSystemComboBox'
+        'ReleaseComboBox'
+        'ArchitectureComboBox'
+        'UpdateTypeComboBox'
+        'ResultsList'
+        'DownloadButton'
+        'CloseButton'
+        'CatalogStatusText'
+    )
+
+    foreach ($requiredControl in $requiredControls) {
+        if (-not $catalogControls.ContainsKey($requiredControl)) {
+            throw "Required catalog dialog control '$requiredControl' was not found in XAML."
         }
     }
+
+    #endregion Dynamic Control Binding
 
     if (-not $Context.State.CatalogFacets) {
         $Context.State.CatalogFacets = Get-ToolkitCatalogData
@@ -129,11 +128,13 @@ function Show-CatalogDialog {
         )
 
         if (-not $Brush) {
-            $Brush = New-Object Windows.Media.SolidColorBrush ([Windows.Media.Color]::FromRgb(0x2B, 0x57, 0x9A))
+            $Brush = [System.Windows.Media.SolidColorBrush]::new(
+                [System.Windows.Media.Color]::FromRgb(0x2B, 0x57, 0x9A)
+            )
         }
 
-        $Controls.StatusText.Text = $Message
-        $Controls.StatusText.Foreground = $Brush
+        $Controls.CatalogStatusText.Text = $Message
+        $Controls.CatalogStatusText.Foreground = $Brush
     }
 
     $catalogControls.OperatingSystemComboBox.Add_SelectionChanged({
