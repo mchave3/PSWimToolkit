@@ -33,7 +33,8 @@ function Write-ToolkitLog {
         $defaultLevel = 'Info'
     }
 
-    $shouldLog = ($levelRanking[$Type] -ge $levelRanking[$defaultLevel]) -or ($Type -eq 'Debug')
+    # Only log if the message type meets or exceeds the configured log level
+    $shouldLog = $levelRanking[$Type] -ge $levelRanking[$defaultLevel]
     if (-not $shouldLog) {
         return
     }

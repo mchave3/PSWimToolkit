@@ -4,8 +4,14 @@ function Initialize-LogFile {
         [switch] $ForceNew
     )
 
-    if (-not (Get-Variable -Name 'LogConfig' -Scope Script -ErrorAction SilentlyContinue)) {
-        $defaultLogDirectory = Get-ToolkitDataPath -Child 'Logs'
+    # LogConfig should already be initialized by Initialize-PSWimToolkit.ps1 bootstrap
+    # This is a fallback in case the function is called before bootstrap completes
+    if (-not (Get-Variable -Name 'LogConfig' -Scope Script -ErrorAction SilentlyContinue) -or -not $script:LogConfig) {
+        $defaultLogDirectory = if (Get-Command -Name 'Get-ToolkitDataPath' -ErrorAction SilentlyContinue) {
+            Get-ToolkitDataPath -Child 'Logs'
+        } else {
+            Join-Path -Path ([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonApplicationData)) -ChildPath 'PSWimToolkit\Logs'
+        }
         $script:LogConfig = [ordered]@{
             DefaultDirectory   = $defaultLogDirectory
             MaxFileSizeBytes   = 10MB
@@ -13,8 +19,9 @@ function Initialize-LogFile {
             EnableConsole      = $true
             EnableFile         = $true
             DefaultLogLevel    = 'Info'
-            SupportedLogLevels = @('Debug','Info','Warning','Error','Success','Stage')
+            SupportedLogLevels = @('Debug', 'Info', 'Warning', 'Error', 'Success', 'Stage')
         }
+        Write-Verbose "Initialize-LogFile: Created fallback LogConfig" -Verbose
     }
 
     $logDirectory = $script:LogConfig.DefaultDirectory
