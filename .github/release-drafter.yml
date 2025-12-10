@@ -24,7 +24,7 @@ version-resolver:
       - 'documentation'
       - 'dependencies'
       - 'maintenance'
-  default: patch
+  default: minor
 
 # Categories for grouping changes
 categories:
