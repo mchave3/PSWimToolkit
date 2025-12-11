@@ -35,7 +35,7 @@ categories:
     labels:
       - 'enhancement'
       - 'feature'
-  - title: '🐛 Bug Fixes'
+  - title: '🩹 Bug Fixes'
     labels:
       - 'bug'
       - 'bugfix'
