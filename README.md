@@ -18,7 +18,7 @@ A modern PowerShell toolkit for provisioning Windows images (WIM) with Microsoft
 ## 📋 Requirements
 
 - **Windows** - This module requires Windows OS (DISM, WIM support)
-- **PowerShell 7.4+** - PowerShell Core is required
+- **PowerShell 7.5+** - PowerShell Core is required
 - **Administrator privileges** - Required for mounting/servicing WIM images
 
 ## 🚀 Installation
@@ -108,4 +108,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Author:** Mickael CHAVE
 
 **Project:** [https://github.com/mchave3/PSWimToolkit](https://github.com/mchave3/PSWimToolkit)
-

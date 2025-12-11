@@ -7,7 +7,7 @@
 | **Name** | PSWimToolkit |
 | **Version** | 1.1.0 |
 | **Author** | Mickael CHAVE |
-| **PowerShell Version** | 7.4+ |
+| **PowerShell Version** | 7.5+ |
 
 ## Description
 

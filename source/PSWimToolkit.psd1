@@ -33,7 +33,7 @@ Copyright = '(c) Mickael CHAVE. All rights reserved.'
 Description = 'Modern PowerShell toolkit for provisioning Windows images (WIM) with Microsoft Update Catalog integration and automation helpers.'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '7.4'
+PowerShellVersion = '7.5'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''

@@ -1,5 +1,5 @@
 #requires -PSEdition Core
-#requires -Version 7.4
+#requires -Version 7.5
 
 <#
     .DESCRIPTION

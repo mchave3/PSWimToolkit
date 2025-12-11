@@ -46,7 +46,7 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 ### Prerequisites
 
 - Windows OS (required for DISM/WIM operations)
-- PowerShell 7.4 or higher
+- PowerShell 7.5 or higher
 - Git
 
 ### Building the Module
