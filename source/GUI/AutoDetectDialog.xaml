@@ -2,140 +2,112 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Auto Detected Updates"
-    Width="920"
-    Height="560"
-    Background="#FFFFFF"
+    Width="900"
+    Height="580"
+    Background="#F8F9FA"
     FontFamily="Segoe UI"
     WindowStartupLocation="CenterOwner">
-    <Grid Margin="5">
+    <Grid Margin="15">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!--  Title  -->
+        <!-- Header -->
         <TextBlock
             Grid.Row="0"
-            Margin="5"
-            FontSize="15"
+            Margin="0,0,0,15"
+            FontSize="16"
             FontWeight="SemiBold"
             Foreground="#2B579A"
-            Text="Updates that match the selected WIM images." />
+            Text="Updates matching selected WIM images" />
 
-        <!--  Download path and update type  -->
-        <Grid Grid.Row="1" Margin="5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <!-- Configuration -->
+        <Border Grid.Row="1" Background="White" CornerRadius="4" Padding="15" Margin="0,0,0,10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.08" />
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <!-- Download Path -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Download path:" VerticalAlignment="Center" Foreground="#586069" Margin="0,0,10,0" />
+                    <TextBox x:Name="DownloadPathTextBox" Grid.Column="1" Padding="8,6" />
+                    <Button x:Name="BrowseDownloadPathButton" Grid.Column="2" Margin="10,0,0,0" Content="Browse" Padding="16,6" />
+                </Grid>
 
-            <TextBlock
-                Grid.Column="0"
-                Margin="5"
-                VerticalAlignment="Center"
-                Text="Download path:" />
-            <TextBox
-                x:Name="DownloadPathTextBox"
-                Grid.Column="1"
-                Margin="5" />
-            <Button
-                x:Name="BrowseDownloadPathButton"
-                Grid.Column="2"
-                Margin="5"
-                Content="Browse..." />
-        </Grid>
+                <!-- Update Type and Options -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <TextBlock Text="Update type:" VerticalAlignment="Center" Foreground="#586069" Margin="0,0,10,0" />
+                    <ComboBox x:Name="AutoDetectUpdateTypeComboBox" Width="200" Padding="8,6" />
+                    <CheckBox x:Name="AutoDetectIncludePreviewCheckBox" Margin="20,0,0,0" VerticalAlignment="Center" Content="Include preview updates" />
+                </StackPanel>
+            </Grid>
+        </Border>
 
-        <!--  Update type and preview checkbox  -->
-        <StackPanel
-            Grid.Row="2"
-            Margin="5"
-            Orientation="Horizontal">
-            <TextBlock
-                Margin="5"
-                VerticalAlignment="Center"
-                Text="Update type:" />
-            <ComboBox
-                x:Name="AutoDetectUpdateTypeComboBox"
-                Width="220"
-                Margin="5"
-                VerticalAlignment="Center" />
-            <CheckBox
-                x:Name="AutoDetectIncludePreviewCheckBox"
-                Margin="5"
-                VerticalAlignment="Center"
-                Content="Include preview updates" />
-        </StackPanel>
+        <!-- Results -->
+        <Border Grid.Row="2" Background="White" CornerRadius="4" Padding="0" Margin="0,0,0,10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.08" />
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                
+                <Border Grid.Row="0" Background="#2B579A" CornerRadius="4,4,0,0" Padding="12,8">
+                    <TextBlock Text="Detected Updates" FontWeight="SemiBold" Foreground="White" FontSize="13" />
+                </Border>
 
-        <!--  Results list  -->
-        <ListView
-            x:Name="AutoDetectResults"
-            Grid.Row="3"
-            Margin="5"
-            SelectionMode="Extended">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn
-                        Width="180"
-                        DisplayMemberBinding="{Binding WimName}"
-                        Header="WIM" />
-                    <GridViewColumn
-                        Width="60"
-                        DisplayMemberBinding="{Binding Index}"
-                        Header="Index" />
-                    <GridViewColumn
-                        Width="80"
-                        DisplayMemberBinding="{Binding KB}"
-                        Header="KB" />
-                    <GridViewColumn
-                        Width="280"
-                        DisplayMemberBinding="{Binding Title}"
-                        Header="Title" />
-                    <GridViewColumn
-                        Width="120"
-                        DisplayMemberBinding="{Binding Classification}"
-                        Header="Classification" />
-                    <GridViewColumn
-                        Width="120"
-                        DisplayMemberBinding="{Binding LastUpdated}"
-                        Header="Last Updated" />
-                </GridView>
-            </ListView.View>
-        </ListView>
+                <ListView
+                    x:Name="AutoDetectResults"
+                    Grid.Row="1"
+                    BorderThickness="0"
+                    SelectionMode="Extended">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="160" DisplayMemberBinding="{Binding WimName}" Header="WIM" />
+                            <GridViewColumn Width="50" DisplayMemberBinding="{Binding Index}" Header="Index" />
+                            <GridViewColumn Width="80" DisplayMemberBinding="{Binding KB}" Header="KB" />
+                            <GridViewColumn Width="300" DisplayMemberBinding="{Binding Title}" Header="Title" />
+                            <GridViewColumn Width="100" DisplayMemberBinding="{Binding Classification}" Header="Classification" />
+                            <GridViewColumn Width="100" DisplayMemberBinding="{Binding LastUpdated}" Header="Last Updated" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </Border>
 
-        <!--  Status and buttons  -->
-        <Grid Grid.Row="4" Margin="5">
+        <!-- Footer -->
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-
+            
             <TextBlock
                 x:Name="AutoDetectStatusText"
                 Grid.Column="0"
-                Margin="5"
                 VerticalAlignment="Center"
-                Foreground="#2B579A" />
+                Foreground="#586069"
+                FontSize="12" />
 
-            <StackPanel
-                Grid.Column="1"
-                Margin="5"
-                Orientation="Horizontal">
-                <Button
-                    x:Name="QueueDownloadButton"
-                    Margin="5"
-                    Content="Download Selected" />
-                <Button
-                    x:Name="CopyUpdatesButton"
-                    Margin="5"
-                    Content="Copy Details" />
-                <Button
-                    x:Name="CloseButton"
-                    Margin="5"
-                    Content="Close" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="QueueDownloadButton" Margin="0,0,8,0" Content="Download Selected" />
+                <Button x:Name="CopyUpdatesButton" Margin="0,0,8,0" Content="Copy Details" Background="#6A737D" />
+                <Button x:Name="CloseButton" Content="Close" Background="#6A737D" />
             </StackPanel>
         </Grid>
     </Grid>

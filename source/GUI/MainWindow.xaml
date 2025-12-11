@@ -2,387 +2,72 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:r="clr-namespace:System.Windows.Controls.Ribbon;assembly=System.Windows.Controls.Ribbon"
-    Title="PSWimToolkit - Provisioning Console"
-    Background="#F5F7FA"
+    Title="PSWimToolkit"
+    Background="#F8F9FA"
     FontFamily="Segoe UI"
     WindowStartupLocation="CenterScreen">
     <Window.Style>
         <Style TargetType="Window">
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Style.Triggers>
-                <Trigger Property="WindowState" Value="Normal">
-                    <Setter Property="MinWidth" Value="1000" />
-                    <Setter Property="MinHeight" Value="1050" />
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="MinWidth" Value="900" />
+            <Setter Property="MinHeight" Value="700" />
         </Style>
     </Window.Style>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!--  Ribbon  -->
+        <!-- Ribbon -->
         <r:Ribbon Grid.Row="0">
             <r:Ribbon.ApplicationMenu>
                 <r:RibbonApplicationMenu>
                     <r:RibbonApplicationMenuItem x:Name="ExitMenuItem" Header="Exit" />
                 </r:RibbonApplicationMenu>
             </r:Ribbon.ApplicationMenu>
-            <r:RibbonTab Header="Tools">
+
+            <r:RibbonTab Header="Home">
+                <r:RibbonGroup Header="WIM">
+                    <r:RibbonButton x:Name="AddWimButton" Label="Import WIM" />
+                    <r:RibbonButton x:Name="ImportIsoButton" Label="Import ISO" />
+                    <r:RibbonButton x:Name="WimDetailsButton" Label="Details" />
+                    <r:RibbonSeparator />
+                    <r:RibbonButton x:Name="RemoveWimButton" Label="Remove" />
+                    <r:RibbonButton x:Name="DeleteWimButton" Label="Delete" />
+                    <r:RibbonButton x:Name="ClearWimButton" Label="Clear All" />
+                </r:RibbonGroup>
+                <r:RibbonGroup Header="Updates">
+                    <r:RibbonButton x:Name="AutoDetectButton" Label="Auto Detect" />
+                    <r:RibbonButton x:Name="SearchCatalogButton" Label="Search Catalog" />
+                    <r:RibbonButton x:Name="DownloadUpdatesMenuItem" Label="Download" />
+                </r:RibbonGroup>
                 <r:RibbonGroup Header="Provisioning">
-                    <r:RibbonButton x:Name="DownloadUpdatesMenuItem" Label="Download Updates..." />
-                    <r:RibbonButton x:Name="ClearLogsMenuItem" Label="Clear Logs" />
-                    <r:RibbonButton x:Name="ExportLogsMenuItem" Label="Export Logs..." />
+                    <r:RibbonButton x:Name="StartButton" Label="Start" />
+                    <r:RibbonButton x:Name="StopButton" Label="Stop" IsEnabled="False" />
                 </r:RibbonGroup>
             </r:RibbonTab>
-            <r:RibbonTab Header="View">
-                <r:RibbonGroup Header="Layout">
-                    <r:RibbonToggleButton
-                        x:Name="ToggleLogViewMenuItem"
-                        IsChecked="True"
-                        Label="Show/Hide Log Viewer" />
+
+            <r:RibbonTab Header="Settings">
+                <r:RibbonGroup Header="Folders">
+                    <r:RibbonButton x:Name="BrowseUpdateButton" Label="Update Folder" />
+                    <r:RibbonButton x:Name="BrowseSxSButton" Label="SxS Folder" />
+                    <r:RibbonButton x:Name="BrowseOutputButton" Label="Output Folder" />
                 </r:RibbonGroup>
-            </r:RibbonTab>
-            <r:RibbonTab Header="Help">
-                <r:RibbonGroup Header="Resources">
-                    <r:RibbonButton x:Name="AboutMenuItem" Label="About PSWimToolkit" />
-                    <r:RibbonButton x:Name="DocumentationMenuItem" Label="Documentation" />
+                <r:RibbonGroup Header="Options">
+                    <r:RibbonCheckBox x:Name="EnableNetFxCheckBox" Label=".NET Framework 3.5" />
+                    <r:RibbonCheckBox x:Name="ForceCheckBox" Label="Force Reapply" />
+                    <r:RibbonCheckBox x:Name="IncludePreviewCheckBox" Label="Include Preview" />
+                    <r:RibbonCheckBox x:Name="VerboseLogCheckBox" Label="Verbose Logging" />
                 </r:RibbonGroup>
-            </r:RibbonTab>
-        </r:Ribbon>
-
-        <ScrollViewer
-            Grid.Row="1"
-            HorizontalScrollBarVisibility="Auto"
-            VerticalScrollBarVisibility="Auto">
-            <Grid Margin="5">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-
-                <!--  Add WIM Management  -->
-                <GroupBox
-                    Grid.Row="1"
-                    Margin="5"
-                    Header="WIM Management">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <StackPanel
-                            Grid.Row="0"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-
-                            <!--  Add WIM Buttons  -->
-                            <Button
-                                x:Name="AddWimButton"
-                                Margin="5"
-                                Content="Import WIM..." />
-
-                            <!--  Import ISO Button  -->
-                            <Button
-                                x:Name="ImportIsoButton"
-                                Margin="5"
-                                Content="Import ISO..." />
-
-                            <!--  WIM Details Button  -->
-                            <Button
-                                x:Name="WimDetailsButton"
-                                Margin="5"
-                                Content="Details..." />
-
-                            <!--  Separator  -->
-                            <Border
-                                Width="1"
-                                Height="24"
-                                Margin="5,0,5,0"
-                                VerticalAlignment="Center"
-                                Background="#D0D3D9" />
-
-                            <!--  Remove WIM Buttons  -->
-                            <Button
-                                x:Name="RemoveWimButton"
-                                Margin="5"
-                                Content="Remove Selected" />
-
-                            <!--  Delete WIM Button  -->
-                            <Button
-                                x:Name="DeleteWimButton"
-                                Margin="5"
-                                Content="Delete From Import" />
-
-                            <!--  Clear All Button  -->
-                            <Button
-                                x:Name="ClearWimButton"
-                                Margin="5"
-                                Content="Clear All" />
-                        </StackPanel>
-                        <Grid Grid.Row="1" Margin="5">
-                            <!--  WIM Data Grid  -->
-                            <DataGrid
-                                x:Name="WimGrid"
-                                AutoGenerateColumns="False"
-                                CanUserAddRows="False"
-                                HeadersVisibility="Column"
-                                IsReadOnly="False"
-                                RowHeight="30"
-                                SelectionMode="Extended">
-                                <DataGrid.Style>
-                                    <Style TargetType="DataGrid">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Items.Count, RelativeSource={RelativeSource Self}}" Value="0">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Style>
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn
-                                        Width="180"
-                                        MinWidth="180"
-                                        Binding="{Binding Name}"
-                                        Header="Name"
-                                        IsReadOnly="True" />
-                                    <DataGridTextColumn
-                                        Width="*"
-                                        MinWidth="220"
-                                        Binding="{Binding Path}"
-                                        Header="Path"
-                                        IsReadOnly="True" />
-                                    <DataGridTextColumn
-                                        Width="80"
-                                        MinWidth="80"
-                                        Binding="{Binding Index}"
-                                        Header="Index" />
-                                    <DataGridTextColumn
-                                        Width="140"
-                                        MinWidth="140"
-                                        Binding="{Binding Status}"
-                                        Header="Status"
-                                        IsReadOnly="True" />
-                                    <DataGridTextColumn
-                                        Width="220"
-                                        MinWidth="220"
-                                        Binding="{Binding Details}"
-                                        Header="Details"
-                                        IsReadOnly="True" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-
-                            <!--  No WIMs TextBlock  -->
-                            <TextBlock
-                                Margin="5"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontStyle="Italic"
-                                Foreground="#7A869A"
-                                Text="No WIM images imported yet. Import a WIM or ISO to get started."
-                                TextAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Items.Count, ElementName=WimGrid}" Value="0">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Grid>
-                    </Grid>
-                </GroupBox>
-
-                <!--  Update Configuration  -->
-                <GroupBox
-                    Grid.Row="2"
-                    Margin="5"
-                    Header="Update Configuration">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="160" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <!--  Update folder  -->
-                        <TextBlock
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="Update folder:" />
-                        <TextBox
-                            x:Name="UpdatePathTextBox"
-                            Grid.Row="0"
-                            Grid.Column="1"
-                            Margin="5"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Center"
-                            IsReadOnly="True"
-                            IsReadOnlyCaretVisible="True" />
-                        <Button
-                            x:Name="BrowseUpdateButton"
-                            Grid.Row="0"
-                            Grid.Column="2"
-                            Margin="5"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Content="Open" />
-
-                        <!--  SxS folder  -->
-                        <TextBlock
-                            Grid.Row="1"
-                            Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="SxS folder:" />
-                        <TextBox
-                            x:Name="SxSPathTextBox"
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            Margin="5"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Center"
-                            IsReadOnly="True"
-                            IsReadOnlyCaretVisible="True" />
-                        <Button
-                            x:Name="BrowseSxSButton"
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Margin="5"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Content="Open" />
-
-                        <!--  Output folder  -->
-                        <TextBlock
-                            Grid.Row="2"
-                            Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="Output folder:" />
-                        <TextBox
-                            x:Name="OutputPathTextBox"
-                            Grid.Row="2"
-                            Grid.Column="1"
-                            Margin="5"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Center"
-                            IsReadOnly="True"
-                            IsReadOnlyCaretVisible="True" />
-                        <Button
-                            x:Name="BrowseOutputButton"
-                            Grid.Row="2"
-                            Grid.Column="2"
-                            Margin="5"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Content="Open" />
-
-                        <!--  Options  -->
-                        <StackPanel
-                            Grid.Row="3"
-                            Grid.Column="0"
-                            Grid.ColumnSpan="3"
-                            Margin="5"
-                            Orientation="Horizontal">
-                            <CheckBox
-                                x:Name="EnableNetFxCheckBox"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Content="Enable .NET Framework 3.5" />
-                            <CheckBox
-                                x:Name="ForceCheckBox"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Content="Force reapply updates" />
-                            <CheckBox
-                                x:Name="VerboseLogCheckBox"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Content="Verbose logging" />
-                            <CheckBox
-                                x:Name="IncludePreviewCheckBox"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Content="Include preview updates" />
-                            <Button
-                                x:Name="AutoDetectButton"
-                                Margin="5"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Content="Auto Detect..." />
-                            <Button
-                                x:Name="SearchCatalogButton"
-                                Margin="5"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Content="Search Catalog..." />
-                        </StackPanel>
-                    </Grid>
-                </GroupBox>
-
-                <!--  Provisioning Control  -->
-                <GroupBox
-                    Grid.Row="3"
-                    Margin="5"
-                    Header="Provisioning Control">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <!--  Start/Stop Buttons  -->
-                        <StackPanel
-                            Grid.Row="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-                            <Button
-                                x:Name="StartButton"
-                                Margin="5"
-                                Content="Start Provisioning" />
-                            <Button
-                                x:Name="StopButton"
-                                Margin="5"
-                                Content="Stop"
-                                IsEnabled="False" />
-                        </StackPanel>
-
-                        <!--  Throttle Slider  -->
-                        <StackPanel
-                            Grid.Row="1"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-                            <TextBlock
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Text="Throttle limit:" />
+                <r:RibbonGroup Header="Performance">
+                    <StackPanel Orientation="Vertical" Margin="5">
+                        <TextBlock Text="Throttle Limit" HorizontalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal">
                             <Slider
                                 x:Name="ThrottleSlider"
-                                Width="200"
+                                Width="120"
                                 VerticalAlignment="Center"
                                 IsSnapToTickEnabled="True"
                                 Maximum="20"
@@ -391,162 +76,267 @@
                                 Value="10" />
                             <TextBlock
                                 x:Name="ThrottleValueText"
-                                Margin="5"
+                                Margin="5,0,0,0"
                                 VerticalAlignment="Center"
                                 Text="10" />
                         </StackPanel>
+                    </StackPanel>
+                </r:RibbonGroup>
+            </r:RibbonTab>
 
-                        <!--  Status TextBlock  -->
-                        <TextBlock
-                            x:Name="StatusTextBlock"
-                            Grid.Row="2"
-                            Margin="5"
-                            Foreground="#2B579A"
-                            Text="Ready" />
+            <r:RibbonTab Header="View">
+                <r:RibbonGroup Header="Panels">
+                    <r:RibbonToggleButton
+                        x:Name="ToggleLogViewMenuItem"
+                        IsChecked="True"
+                        Label="Log Viewer" />
+                </r:RibbonGroup>
+                <r:RibbonGroup Header="Logs">
+                    <r:RibbonButton x:Name="ClearLogsMenuItem" Label="Clear Logs" />
+                    <r:RibbonButton x:Name="ExportLogsMenuItem" Label="Export Logs" />
+                    <r:RibbonButton x:Name="OpenLogFolderButton" Label="Open Log Folder" />
+                </r:RibbonGroup>
+            </r:RibbonTab>
+
+            <r:RibbonTab Header="Help">
+                <r:RibbonGroup Header="Info">
+                    <r:RibbonButton x:Name="AboutMenuItem" Label="About" />
+                    <r:RibbonButton x:Name="DocumentationMenuItem" Label="Documentation" />
+                </r:RibbonGroup>
+            </r:RibbonTab>
+        </r:Ribbon>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="150" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="120" />
+            </Grid.RowDefinitions>
+
+            <!-- Folder Paths Summary -->
+            <Border Grid.Row="0" Background="White" CornerRadius="4" Padding="12" Margin="0,0,0,10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.1" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Updates:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#5C6773" Margin="0,0,8,0" />
+                    <TextBox x:Name="UpdatePathTextBox" Grid.Column="1" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Foreground="#2B579A" />
+                    <TextBlock Grid.Column="2" Text="SxS:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#5C6773" Margin="15,0,8,0" />
+                    <TextBox x:Name="SxSPathTextBox" Grid.Column="3" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Foreground="#2B579A" />
+                    <TextBlock Grid.Column="4" Text="Output:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#5C6773" Margin="15,0,8,0" />
+                    <TextBox x:Name="OutputPathTextBox" Grid.Column="5" IsReadOnly="True" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Foreground="#2B579A" />
+                </Grid>
+            </Border>
+
+            <!-- WIM Images Panel -->
+            <Border Grid.Row="1" Background="White" CornerRadius="4" Padding="0" Margin="0,0,0,10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.1" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Header -->
+                    <Border Grid.Row="0" Background="#2B579A" CornerRadius="4,4,0,0" Padding="12,8">
+                        <TextBlock Text="WIM Images" FontWeight="SemiBold" Foreground="White" FontSize="13" />
+                    </Border>
+                    
+                    <!-- Content -->
+                    <Grid Grid.Row="1">
+                        <!-- WIM Data Grid -->
+                        <DataGrid
+                            x:Name="WimGrid"
+                            AutoGenerateColumns="False"
+                            CanUserAddRows="False"
+                            HeadersVisibility="Column"
+                            IsReadOnly="False"
+                            RowHeight="32"
+                            SelectionMode="Extended"
+                            GridLinesVisibility="Horizontal"
+                            HorizontalGridLinesBrush="#E8E8E8"
+                            BorderThickness="0"
+                            Background="White">
+                            <DataGrid.Style>
+                                <Style TargetType="DataGrid">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, RelativeSource={RelativeSource Self}}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.Style>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Width="180" MinWidth="120" Binding="{Binding Name}" Header="Name" IsReadOnly="True" />
+                                <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Path}" Header="Path" IsReadOnly="True" />
+                                <DataGridTextColumn Width="70" MinWidth="50" Binding="{Binding Index}" Header="Index" />
+                                <DataGridTextColumn Width="100" MinWidth="80" Binding="{Binding Status}" Header="Status" IsReadOnly="True" />
+                                <DataGridTextColumn Width="200" MinWidth="150" Binding="{Binding Details}" Header="Details" IsReadOnly="True" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- Empty State -->
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, ElementName=WimGrid}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock
+                                Text="No WIM images"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Foreground="#7A869A"
+                                HorizontalAlignment="Center"
+                                Margin="0,0,0,5" />
+                            <TextBlock
+                                Text="Import a WIM or ISO file to get started"
+                                FontSize="12"
+                                Foreground="#A0A8B4"
+                                HorizontalAlignment="Center" />
+                        </StackPanel>
                     </Grid>
-                </GroupBox>
+                </Grid>
+            </Border>
 
-                <!--  Progress Viewer  -->
-                <GroupBox
-                    Grid.Row="4"
-                    Margin="5"
-                    Header="Progress">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <!--  Overall Progress Bar  -->
+            <!-- Progress Section -->
+            <Border Grid.Row="2" Background="White" CornerRadius="4" Padding="12" Margin="0,0,0,10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.1" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Vertical">
+                        <TextBlock x:Name="StatusTextBlock" Text="Ready" FontWeight="SemiBold" Foreground="#2B579A" Margin="0,0,0,6" />
                         <ProgressBar
                             x:Name="OverallProgressBar"
-                            Grid.Row="0"
-                            Height="22"
-                            Margin="5"
+                            Height="6"
                             IsIndeterminate="False"
                             Maximum="100"
-                            Minimum="0" />
+                            Minimum="0"
+                            Foreground="#0078D4"
+                            Background="#E8E8E8"
+                            BorderThickness="0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                        <!--  Progress List  -->
-                        <ListView
-                            x:Name="ProgressList"
-                            Grid.Row="1"
-                            Margin="5">
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn
-                                        Width="200"
-                                        DisplayMemberBinding="{Binding Name}"
-                                        Header="Name" />
-                                    <GridViewColumn
-                                        Width="120"
-                                        DisplayMemberBinding="{Binding Status}"
-                                        Header="Status" />
-                                    <GridViewColumn
-                                        Width="400"
-                                        DisplayMemberBinding="{Binding Details}"
-                                        Header="Details" />
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </Grid>
-                </GroupBox>
+            <!-- Hidden ProgressList for code compatibility -->
+            <ListView x:Name="ProgressList" Visibility="Collapsed" />
 
-                <!--  Log Viewer  -->
-                <GroupBox
-                    x:Name="LogViewerGroup"
-                    Grid.Row="5"
-                    Margin="5"
-                    Header="Log Viewer">
-                    <Grid Margin="5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+            <!-- Splitter -->
+            <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" Background="Transparent" />
 
-                        <!--  Log Controls  -->
-                        <StackPanel
-                            Grid.Row="0"
-                            Margin="5"
-                            HorizontalAlignment="Stretch"
-                            Orientation="Horizontal">
-                            <TextBlock
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Text="Filter:" />
-                            <ComboBox
-                                x:Name="LogLevelComboBox"
-                                Width="140"
-                                Margin="5"
-                                SelectedIndex="0">
-                                <ComboBoxItem Content="All" />
-                                <ComboBoxItem Content="Debug" />
-                                <ComboBoxItem Content="Info" />
-                                <ComboBoxItem Content="Stage" />
-                                <ComboBoxItem Content="Success" />
-                                <ComboBoxItem Content="Warning" />
-                                <ComboBoxItem Content="Error" />
-                            </ComboBox>
-                            <CheckBox
-                                x:Name="AutoScrollCheckBox"
-                                Margin="5"
-                                VerticalAlignment="Center"
-                                Content="Auto-scroll"
-                                IsChecked="True" />
-                            <Button
-                                x:Name="SaveLogsButton"
-                                Margin="5"
-                                Content="Save Logs" />
-                            <Button
-                                x:Name="ClearLogsButton"
-                                Margin="5"
-                                Content="Clear Viewer" />
-                            <Button
-                                x:Name="OpenLogFolderButton"
-                                Margin="5"
-                                Content="Open Log Folder" />
-                        </StackPanel>
+            <!-- Log Viewer -->
+            <Border x:Name="LogViewerGroup" Grid.Row="4" Background="White" CornerRadius="4" Padding="0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.1" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Header with controls -->
+                    <Border Grid.Row="0" Background="#F0F2F5" CornerRadius="4,4,0,0" Padding="12,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Logs" FontWeight="SemiBold" Foreground="#2B579A" FontSize="13" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="#5C6773" />
+                                <ComboBox
+                                    x:Name="LogLevelComboBox"
+                                    Width="100"
+                                    SelectedIndex="0"
+                                    Padding="6,4"
+                                    BorderBrush="#D0D3D9">
+                                    <ComboBoxItem Content="All" />
+                                    <ComboBoxItem Content="Debug" />
+                                    <ComboBoxItem Content="Info" />
+                                    <ComboBoxItem Content="Stage" />
+                                    <ComboBoxItem Content="Success" />
+                                    <ComboBoxItem Content="Warning" />
+                                    <ComboBoxItem Content="Error" />
+                                </ComboBox>
+                                <CheckBox
+                                    x:Name="AutoScrollCheckBox"
+                                    Margin="15,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Content="Auto-scroll"
+                                    IsChecked="True" />
+                                <Button x:Name="SaveLogsButton" Content="Save" Margin="15,0,0,0" Padding="10,2" FontSize="11" />
+                                <Button x:Name="ClearLogsButton" Content="Clear" Margin="5,0,0,0" Padding="10,2" FontSize="11" Background="#6A737D" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
-                        <!--  Log List  -->
-                        <ListView
-                            x:Name="LogList"
-                            Grid.Row="1"
-                            MinHeight="150"
-                            Margin="5"
-                            ItemsPanel="{DynamicResource LogItemsPanel}">
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn
-                                        Width="160"
-                                        DisplayMemberBinding="{Binding Timestamp}"
-                                        Header="Time" />
-                                    <GridViewColumn
-                                        Width="90"
-                                        DisplayMemberBinding="{Binding Level}"
-                                        Header="Level" />
-                                    <GridViewColumn
-                                        Width="120"
-                                        DisplayMemberBinding="{Binding Source}"
-                                        Header="Source" />
-                                    <GridViewColumn
-                                        Width="520"
-                                        DisplayMemberBinding="{Binding Message}"
-                                        Header="Message" />
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
+                    <!-- Log List -->
+                    <ListView
+                        x:Name="LogList"
+                        Grid.Row="1"
+                        BorderThickness="0"
+                        Background="White"
+                        ItemsPanel="{DynamicResource LogItemsPanel}">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="140" DisplayMemberBinding="{Binding Timestamp}" Header="Time" />
+                                <GridViewColumn Width="70" DisplayMemberBinding="{Binding Level}" Header="Level" />
+                                <GridViewColumn Width="100" DisplayMemberBinding="{Binding Source}" Header="Source" />
+                                <GridViewColumn Width="500" DisplayMemberBinding="{Binding Message}" Header="Message" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
 
-                        <!--  Log Path TextBlock  -->
+                    <!-- Log path footer -->
+                    <Border Grid.Row="2" Background="#F8F9FA" Padding="12,6" CornerRadius="0,0,4,4">
                         <TextBlock
                             x:Name="LogPathTextBlock"
-                            Grid.Row="2"
-                            Margin="5"
-                            Foreground="#666666"
+                            Foreground="#8A939F"
+                            FontSize="11"
                             Text="Logs folder: (auto)" />
-                    </Grid>
-                </GroupBox>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#2B579A" Padding="10,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusBarText" Grid.Column="0" Text="Ready" Foreground="White" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="PSWimToolkit v1.1.0" Foreground="#A8C8E8" VerticalAlignment="Center" FontSize="11" />
             </Grid>
-        </ScrollViewer>
+        </Border>
     </Grid>
 </Window>
